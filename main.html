@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32-C6 Wearable Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0a0e1a;
+    color: #e0e6f0;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #1a2340, #0f1729);
+    border-radius: 16px;
+    border: 1px solid #2a3555;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  h1 { font-size: 20px; font-weight: 600; }
+  h1 span { color: #4ade80; }
+  .conn-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; }
+  .dot.on { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
+
+  .controls {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  button {
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: #3b82f6; color: white; }
+  .btn-primary:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); }
+  .btn-danger  { background: #ef4444; color: white; }
+  .btn-danger:hover:not(:disabled) { background: #dc2626; }
+  .btn-ghost   { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+  .btn-ghost:hover:not(:disabled) { background: #334155; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .card {
+    background: linear-gradient(135deg, #131a2e, #0f1729);
+    border: 1px solid #2a3555;
+    border-radius: 14px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+  }
+  .card.hr::before     { background: #ef4444; }
+  .card.spo2::before   { background: #3b82f6; }
+  .card.step::before   { background: #22c55e; }
+  .card.bat::before    { background: #f59e0b; }
+  .card.status::before { background: #a855f7; }
+  .card-label {
+    font-size: 12px; color: #94a3b8; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .card-value {
+    font-size: 28px; font-weight: 700; color: #f1f5f9;
+    line-height: 1.1;
+  }
+  .card-unit { font-size: 14px; color: #94a3b8; margin-left: 4px; font-weight: 400; }
+
+  .panel {
+    background: #0f1729;
+    border: 1px solid #2a3555;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .panel-title {
+    font-size: 14px; font-weight: 600; color: #cbd5e1;
+    margin-bottom: 14px; display: flex; justify-content: space-between;
+    align-items: center;
+  }
+  .chart-wrap { position: relative; height: 220px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #1e293b; }
+  th { color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+  td { font-family: 'Consolas', monospace; color: #cbd5e1; }
+  tr:hover td { background: #131a2e; }
+
+  .table-scroll { max-height: 300px; overflow-y: auto; }
+
+  #log {
+    background: #050810;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 12px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: #94a3b8;
+    height: 140px;
+    overflow-y: auto;
+    line-height: 1.6;
+  }
+  #log .ts { color: #475569; }
+  #log .ok { color: #4ade80; }
+  #log .err { color: #ef4444; }
+  #log .rx { color: #60a5fa; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-ok    { background: #064e3b; color: #4ade80; }
+  .badge-warn  { background: #78350f; color: #fbbf24; }
+  .badge-err   { background: #7f1d1d; color: #fca5a5; }
+  .badge-info  { background: #1e3a8a; color: #93c5fd; }
+
+  .empty { text-align: center; color: #64748b; padding: 20px; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>⌚ Wearable Monitor <span>ESP32-C6</span></h1>
+    <div class="conn-status">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Disconnected</span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button class="btn-primary" id="btnConnect">🔗 Connect BLE</button>
+    <button class="btn-danger"  id="btnDisconnect" disabled>⛔ Disconnect</button>
+    <button class="btn-ghost"   id="btnExport">💾 Export CSV</button>
+    <button class="btn-ghost"   id="btnClear">🗑️ Clear Data</button>
+  </div>
+
+  <div class="cards">
+    <div class="card hr">
+      <div class="card-label">❤️ Heart Rate</div>
+      <div class="card-value" id="valHr">--<span class="card-unit">bpm</span></div>
+    </div>
+    <div class="card spo2">
+      <div class="card-label">🫁 SpO₂</div>
+      <div class="card-value" id="valSpo2">--<span class="card-unit">%</span></div>
+    </div>
+    <div class="card step">
+      <div class="card-label">👣 Langkah</div>
+      <div class="card-value" id="valStep">--</div>
+    </div>
+    <div class="card bat">
+      <div class="card-label">🔋 Baterai</div>
+      <div class="card-value" id="valBat">--<span class="card-unit">V</span></div>
+    </div>
+    <div class="card status">
+      <div class="card-label">📡 Status</div>
+      <div class="card-value" id="valStatus" style="font-size:16px;">--</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">
+      <span>📈 Grafik Real-time</span>
+      <span style="font-size:11px; color:#64748b;" id="sampleCount">0 sampel</span>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">📋 Riwayat Data (10 Terakhir)</div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Waktu</th><th>Uptime</th><th>HR</th><th>SpO₂</th>
+            <th>Step</th><th>Baterai</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="7" class="empty">Belum ada data. Klik "Connect BLE" untuk mulai.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">🖥️ Log Konsol</div>
+    <div id="log"></div>
+  </div>
+
+</div>
+
+<script>
+// =====================================================================
+//  KONFIGURASI — SESUAIKAN DENGAN KODE ESP32
+// =====================================================================
+const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
+const CHAR_UUID    = "abcd1234-5678-90ab-cdef-1234567890ab";
+const MAX_HISTORY  = 500;
+const MAX_CHART    = 30;
+
+// =====================================================================
+//  STATE
+// =====================================================================
+let bleDevice = null;
+let bleChar   = null;
+let history   = [];
+let chartHr, chartSpo2;
+
+// =====================================================================
+//  DOM
+// =====================================================================
+const $ = id => document.getElementById(id);
+const logBox = $('log');
+
+function log(msg, type = '') {
+  const t = new Date().toLocaleTimeString('id-ID');
+  const span = document.createElement('div');
+  span.innerHTML = `<span class="ts">[${t}]</span> <span class="${type}">${msg}</span>`;
+  logBox.prepend(span);
+  if (logBox.childNodes.length > 200) logBox.removeChild(logBox.lastChild);
+}
+
+// =====================================================================
+//  INDEEDB — Database lokal
+// =====================================================================
+const DB_NAME = 'esp32_monitor';
+const DB_STORE = 'readings';
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = (e) => {
+      const database = e.target.result;
+      if (!database.objectStoreNames.contains(DB_STORE)) {
+        const store = database.createObjectStore(DB_STORE, { keyPath: 'id', autoIncrement: true });
+        store.createIndex('ts', 'ts');
+      }
+    };
+    req.onsuccess = () => { db = req.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function saveReading(reading) {
+  if (!db) return;
+  const tx = db.transaction(DB_STORE, 'readwrite');
+  tx.objectStore(DB_STORE).add(reading);
+}
+
+function loadHistory() {
+  return new Promise((resolve) => {
+    if (!db) return resolve([]);
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const req = tx.objectStore(DB_STORE).getAll();
+    req.onsuccess = () => resolve(req.result.slice(-MAX_HISTORY));
+    req.onerror = () => resolve([]);
+  });
+}
+
+function clearDB() {
+  if (!db) return;
+  const tx = db.transaction(DB_STORE, 'readwrite');
+  tx.objectStore(DB_STORE).clear();
+  log('🗑️ Database lokal dibersihkan', 'ok');
+}
+
+// =====================================================================
+//  PARSER — Format CSV: "uptime,hr,spo2,steps,battery,status"
+// =====================================================================
+function parsePacket(text) {
+  const parts = text.split(',');
+  if (parts.length < 6) return null;
+  return {
+    ts:      Date.now(),
+    uptime:  parseInt(parts[0]),
+    hr:      parseInt(parts[1]),
+    spo2:    parseInt(parts[2]),
+    steps:   parseInt(parts[3]),
+    bat:     parseFloat(parts[4]),
+    status:  parts.slice(5).join(',').trim()
+  };
+}
+
+// =====================================================================
+//  UI UPDATE
+// =====================================================================
+function getStatusBadge(status) {
+  if (status === 'NORMAL_BLE' || status === 'NORMAL_OFFLINE') return 'badge-ok';
+  if (status.startsWith('WARNING') || status === 'TEMPELKAN_JARI' || status === 'JARI_TIDAK_TERDETEKSI') return 'badge-warn';
+  if (status.startsWith('ERROR')) return 'badge-err';
+  return 'badge-info';
+}
+
+function updateUI(d) {
+  $('valHr').innerHTML     = `${d.hr || '--'}<span class="card-unit">bpm</span>`;
+  $('valSpo2').innerHTML   = `${d.spo2 || '--'}<span class="card-unit">%</span>`;
+  $('valStep').textContent = d.steps;
+  $('valBat').innerHTML    = `${d.bat.toFixed(2)}<span class="card-unit">V</span>`;
+  $('valStatus').innerHTML = `<span class="badge ${getStatusBadge(d.status)}">${d.status}</span>`;
+  $('sampleCount').textContent = `${history.length} sampel`;
+}
+
+function renderHistory() {
+  const tbody = $('historyBody');
+  const recent = history.slice(-10).reverse();
+  if (recent.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Belum ada data.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recent.map(d => `
+    <tr>
+      <td>${new Date(d.ts).toLocaleTimeString('id-ID')}</td>
+      <td>${d.uptime}s</td>
+      <td>${d.hr}</td>
+      <td>${d.spo2}</td>
+      <td>${d.steps}</td>
+      <td>${d.bat.toFixed(2)}V</td>
+      <td><span class="badge ${getStatusBadge(d.status)}">${d.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// =====================================================================
+//  CHART
+// =====================================================================
+function initChart() {
+  const ctx = $('chart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Heart Rate (bpm)',
+          data: [],
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          tension: 0.3, borderWidth: 2, pointRadius: 0, fill: true, yAxisID: 'y'
+        },
+        {
+          label: 'SpO₂ (%)',
+          data: [],
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.3, borderWidth: 2, pointRadius: 0, fill: true, yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 8 },
+          grid: { color: '#1e293b' }
+        },
+        y: {
+          position: 'left',
+          title: { display: true, text: 'HR (bpm)', color: '#ef4444', font: { size: 10 } },
+          ticks: { color: '#64748b', font: { size: 10 } },
+          grid: { color: '#1e293b' },
+          suggestedMin: 50, suggestedMax: 120
+        },
+        y1: {
+          position: 'right',
+          title: { display: true, text: 'SpO₂ (%)', color: '#3b82f6', font: { size: 10 } },
+          ticks: { color: '#64748b', font: { size: 10 } },
+          grid: { drawOnChartArea: false },
+          suggestedMin: 90, suggestedMax: 100
+        }
+      }
+    }
+  });
+}
+
+function updateChart(d) {
+  const label = new Date(d.ts).toLocaleTimeString('id-ID', { hour12: false });
+  chart.data.labels.push(label);
+  chart.data.datasets[0].data.push(d.hr);
+  chart.data.datasets[1].data.push(d.spo2);
+  if (chart.data.labels.length > MAX_CHART) {
+    chart.data.labels.shift();
+    chart.data.datasets.forEach(ds => ds.data.shift());
+  }
+  chart.update('none');
+}
+
+// =====================================================================
+//  HANDLE DATA MASUK
+// =====================================================================
+function handleReading(d) {
+  if (!d) return;
+  history.push(d);
+  if (history.length > MAX_HISTORY) history.shift();
+  saveReading(d);
+  updateUI(d);
+  renderHistory();
+  updateChart(d);
+}
+
+// =====================================================================
+//  WEB BLUETOOTH
+// =====================================================================
+function setConnected(state) {
+  $('statusDot').classList.toggle('on', state);
+  $('statusText').textContent = state ? 'Connected' : 'Disconnected';
+  $('btnConnect').disabled    = state;
+  $('btnDisconnect').disabled = !state;
+}
+
+async function connectBLE() {
+  if (!navigator.bluetooth) {
+    log('❌ Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge terbaru.', 'err');
+    alert('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge terbaru.');
+    return;
+  }
+  try {
+    log('🔍 Memindai perangkat BLE...');
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [SERVICE_UUID] }],
+      optionalServices: [SERVICE_UUID]
+    });
+    log(`📱 Ditemukan: ${bleDevice.name || 'Unknown'}`, 'ok');
+
+    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+    log('🔗 Menghubungkan ke GATT server...');
+    const server = await bleDevice.gatt.connect();
+
+    log('🔎 Mencari service...');
+    const service = await server.getPrimaryService(SERVICE_UUID);
+
+    log('🔎 Mencari characteristic...');
+    bleChar = await service.getCharacteristic(CHAR_UUID);
+
+    log('🔔 Mengaktifkan notifikasi...');
+    await bleChar.startNotifications();
+    bleChar.addEventListener('characteristicvaluechanged', onDataReceived);
+
+    setConnected(true);
+    log('✅ Terhubung! Menunggu data dari ESP32...', 'ok');
+  } catch (err) {
+    log(`❌ Gagal connect: ${err.message}`, 'err');
+    setConnected(false);
+  }
+}
+
+function disconnectBLE() {
+  if (bleDevice && bleDevice.gatt.connected) {
+    bleDevice.gatt.disconnect();
+  }
+}
+
+function onDisconnected() {
+  log('⚠️ Perangkat terputus', 'err');
+  setConnected(false);
+  bleChar = null;
+}
+
+function onDataReceived(event) {
+  const value = event.target.value;
+  const text = new TextDecoder().decode(value);
+  log(`📥 RX: ${text}`, 'rx');
+  const d = parsePacket(text);
+  if (d) handleReading(d);
+  else log('⚠️ Format data tidak dikenali', 'err');
+}
+
+// =====================================================================
+//  EXPORT CSV
+// =====================================================================
+function exportCSV() {
+  if (history.length === 0) {
+    alert('Belum ada data untuk di-export');
+    return;
+  }
+  const header = 'timestamp,uptime_s,hr_bpm,spo2_pct,steps,battery_v,status\n';
+  const rows = history.map(d =>
+    `${new Date(d.ts).toISOString()},${d.uptime},${d.hr},${d.spo2},${d.steps},${d.bat.toFixed(2)},${d.status}`
+  ).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `esp32_monitor_${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  log(`💾 Export ${history.length} baris ke CSV`, 'ok');
+}
+
+// =====================================================================
+//  INIT
+// =====================================================================
+async function init() {
+  await openDB();
+  initChart();
+
+  history = await loadHistory();
+  if (history.length > 0) {
+    log(`📚 Memuat ${history.length} sampel dari database lokal`, 'ok');
+    const last = history[history.length - 1];
+    updateUI(last);
+    // Render chart dari riwayat
+    history.slice(-MAX_CHART).forEach(d => updateChart(d));
+  } else {
+    log('🆕 Database kosong. Siap menerima data baru.');
+  }
+  renderHistory();
+
+  $('btnConnect').addEventListener('click', connectBLE);
+  $('btnDisconnect').addEventListener('click', disconnectBLE);
+  $('btnExport').addEventListener('click', exportCSV);
+  $('btnClear').addEventListener('click', async () => {
+    if (confirm('Hapus semua data riwayat?')) {
+      clearDB();
+      history = [];
+      renderHistory();
+      chart.data.labels = [];
+      chart.data.datasets.forEach(ds => ds.data = []);
+      chart.update();
+      updateUI({ hr: 0, spo2: 0, steps: 0, bat: 0, status: 'CLEARED' });
+      $('sampleCount').textContent = '0 sampel';
+    }
+  });
+
+  log('🚀 Aplikasi siap. Klik "Connect BLE" untuk memulai.');
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
