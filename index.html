@@ -4,39 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Health Monitor ESP32-C6</title>
-<!-- Tailwind CSS via CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
   tailwind.config = {
     theme: {
       extend: {
-        fontFamily: {
-          sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        },
+        fontFamily: { sans: ['-apple-system','BlinkMacSystemFont','Segoe UI','Roboto','sans-serif'] },
         colors: {
-          healthBg: '#f2f5f3',
-          healthDark: '#111111',
-          healthRed: '#ff4d6d',
-          healthOrange: '#f59e0b',
-          healthBlue: '#3b82f6',
-          healthGreen: '#10b981',
-          healthPurple: '#8b5cf6'
+          healthBg: '#f2f5f3', healthDark: '#111111',
+          healthRed: '#ff4d6d', healthOrange: '#f59e0b',
+          healthBlue: '#3b82f6', healthGreen: '#10b981', healthPurple: '#8b5cf6'
         }
       }
     }
   }
 </script>
 <style>
-  /* Menghilangkan scrollbar default untuk table-scroll */
-  .table-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-  .table-scroll::-webkit-scrollbar-thumb {
-    background: #e5e7eb;
-    border-radius: 4px;
-  }
+  .table-scroll::-webkit-scrollbar { width: 4px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+  .ring { transition: stroke-dashoffset 0.6s ease-out; }
+  .bar-fill { transition: width 0.5s ease-out; }
 </style>
 </head>
 <body class="bg-healthBg text-healthDark min-h-screen font-sans antialiased p-5">
@@ -47,26 +35,20 @@
   <header class="flex justify-between items-center py-4 mb-4">
     <h1 class="text-3xl font-semibold text-gray-900 tracking-tight">Health</h1>
     <div class="flex items-center gap-3">
-      <!-- BLE status -->
       <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-sm font-medium border border-gray-100">
         <span class="w-2.5 h-2.5 rounded-full bg-red-500 transition-all duration-300" id="statusDot"></span>
         <span id="statusText" class="text-gray-700">Disconnected</span>
       </div>
-      <!-- Menu Dots -->
       <button class="text-gray-400 hover:text-gray-600 transition p-1">
         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <circle cx="6" cy="12" r="2"></circle>
-          <circle cx="12" cy="12" r="2"></circle>
-          <circle cx="18" cy="12" r="2"></circle>
-          <circle cx="6" cy="6" r="2"></circle>
-          <circle cx="12" cy="6" r="2"></circle>
-          <circle cx="18" cy="6" r="2"></circle>
+          <circle cx="6" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="18" cy="12" r="2"></circle>
+          <circle cx="6" cy="6" r="2"></circle><circle cx="12" cy="6" r="2"></circle><circle cx="18" cy="6" r="2"></circle>
         </svg>
       </button>
     </div>
   </header>
 
-  <!-- Bluetooth & Actions Control Box -->
+  <!-- Control Panel -->
   <div class="mb-6 bg-white p-4 rounded-[28px] shadow-sm border border-gray-50/50">
     <h2 class="text-xs uppercase font-semibold text-gray-400 tracking-wider mb-3 px-1">Control Panel (ESP32-C6)</h2>
     <div class="flex flex-wrap gap-2">
@@ -85,22 +67,23 @@
     </div>
   </div>
 
-  <!-- Activity Overview Card (Top Large) -->
+  <!-- Activity Overview -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm mb-4 border border-gray-50">
     <div class="flex justify-center mb-6 relative">
-      <!-- Multi concentric progress ring, simulated based on image UI -->
       <div class="relative w-44 h-44 flex items-center justify-center">
-        <!-- SVG Ring Trackers -->
         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
           <!-- Inner blue (Stand) -->
           <circle cx="50" cy="50" r="30" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
-          <circle cx="50" cy="50" r="30" stroke="#60a5fa" stroke-width="6" stroke-dasharray="188.4" stroke-dashoffset="60" stroke-linecap="round" fill="transparent" />
+          <circle id="ringStand" class="ring" cx="50" cy="50" r="30" stroke="#60a5fa" stroke-width="6"
+                  stroke-dasharray="188.4" stroke-dashoffset="188.4" stroke-linecap="round" fill="transparent" />
           <!-- Middle yellow (Exercise) -->
           <circle cx="50" cy="50" r="38" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
-          <circle cx="50" cy="50" r="38" stroke="#fbbf24" stroke-width="6" stroke-dasharray="238.76" stroke-dashoffset="100" stroke-linecap="round" fill="transparent" />
+          <circle id="ringExercise" class="ring" cx="50" cy="50" r="38" stroke="#fbbf24" stroke-width="6"
+                  stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" fill="transparent" />
           <!-- Outer orange-red (Move) -->
           <circle cx="50" cy="50" r="46" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
-          <circle cx="50" cy="50" r="46" stroke="#f87171" stroke-width="6" stroke-dasharray="289.02" stroke-dashoffset="90" stroke-linecap="round" fill="transparent" />
+          <circle id="ringMove" class="ring" cx="50" cy="50" r="46" stroke="#f87171" stroke-width="6"
+                  stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" fill="transparent" />
         </svg>
         <div class="absolute inset-0 flex flex-col justify-center items-center">
           <svg class="w-6 h-6 text-orange-400 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -125,19 +108,19 @@
         <div class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-400 mb-0.5">
           <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Exercise
         </div>
-        <div class="text-xl font-bold text-gray-900">47</div>
+        <div class="text-xl font-bold text-gray-900" id="exerciseVal">--</div>
         <div class="text-[10px] text-gray-400">/25 min</div>
       </div>
       <div>
         <div class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-400 mb-0.5">
           <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>Stand
         </div>
-        <div class="text-xl font-bold text-gray-900">16</div>
+        <div class="text-xl font-bold text-gray-900" id="standVal">--</div>
         <div class="text-[10px] text-gray-400">/12 h</div>
       </div>
     </div>
 
-    <!-- Bottom Today's Steps Pill -->
+    <!-- Today's steps -->
     <div class="bg-gray-50 flex items-center justify-between px-4 py-2.5 rounded-full text-xs text-gray-500 font-medium border border-gray-100/50">
       <div class="flex items-center gap-2">
         <svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
@@ -146,7 +129,8 @@
         <span>Today's steps</span>
       </div>
       <div class="flex items-center gap-1 text-gray-700">
-        <span class="font-bold text-sm" id="valStep">--</span> <span class="text-gray-400 font-normal">/10,000 steps</span>
+        <span class="font-bold text-sm" id="valStepPill">--</span>
+        <span class="text-gray-400 font-normal">/10,000 steps</span>
         <svg class="w-3.5 h-3.5 text-gray-300 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4m0-4h.01"></path></svg>
       </div>
     </div>
@@ -154,7 +138,7 @@
 
   <!-- 2x2 Grid Cards -->
   <div class="grid grid-cols-2 gap-4 mb-6">
-    <!-- Heart Card (Bottom Left) -->
+    <!-- Heart -->
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
         <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-2">
@@ -167,16 +151,12 @@
           -- <span class="text-xs font-normal text-gray-400">bpm</span>
         </div>
       </div>
-      <!-- Mini graph simulation, matching exactly like Image_0.png bottom red waves -->
       <div class="h-14 mt-4 relative overflow-hidden">
-        <svg class="w-full h-full text-red-400/80" fill="none" viewBox="0 0 100 40" preserveAspectRatio="none">
-          <path d="M0,40 L5,32 L10,38 L15,10 L20,38 L25,32 L30,35 L35,22 L40,38 L45,34 L50,15 L55,39 L60,32 L65,37 L70,5 L75,30 L80,33 L85,14 L90,30 L95,22 L100,40 Z" fill="rgba(239, 68, 68, 0.06)"></path>
-          <path d="M0,40 L5,32 L10,38 L15,10 L20,38 L25,32 L30,35 L35,22 L40,38 L45,34 L50,15 L55,39 L60,32 L65,37 L70,5 L75,30 L80,33 L85,14 L90,30 L95,22 L100,40" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-        </svg>
+        <canvas id="heartMini"></canvas>
       </div>
     </div>
 
-    <!-- Blood Oxygen (SPO2) -->
+    <!-- SpO2 -->
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
         <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-2">
@@ -189,12 +169,11 @@
           -- <span class="text-xs font-normal text-gray-400">%</span>
         </div>
       </div>
-      <!-- Decorative cloud-based light-blue pattern -->
       <div class="h-14 mt-4 relative overflow-hidden flex items-end">
         <div class="w-full h-1 bg-blue-100 rounded-full mb-1 overflow-hidden">
-          <div class="h-full bg-blue-500 rounded-full w-[95%]"></div>
+          <div id="spo2Bar" class="bar-fill h-full bg-blue-500 rounded-full" style="width: 0%;"></div>
         </div>
-        <span class="absolute bottom-3 right-0 text-[10px] text-gray-400 font-medium">95-100% Ideal</span>
+        <span class="absolute bottom-3 right-0 text-[10px] text-gray-400 font-medium" id="spo2Hint">95-100% Ideal</span>
       </div>
     </div>
 
@@ -211,12 +190,11 @@
           -- <span class="text-xs font-normal text-gray-400">V</span>
         </div>
       </div>
-      <!-- Simulated pill battery scale tracker -->
       <div class="mb-2 flex items-center gap-2">
         <div class="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden border border-gray-200">
-          <div class="h-full bg-amber-400 rounded-full" style="width: 80%;"></div>
+          <div id="batBar" class="bar-fill h-full bg-amber-400 rounded-full" style="width: 0%;"></div>
         </div>
-        <span class="text-[10px] font-semibold text-gray-500">80%</span>
+        <span class="text-[10px] font-semibold text-gray-500" id="batPct">--%</span>
       </div>
     </div>
 
@@ -224,26 +202,24 @@
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
         <div class="text-xs font-semibold text-gray-400 mb-3">Status</div>
-        <div class="text-base font-semibold text-gray-700 leading-snug line-clamp-2" id="valStatus">
-          --
-        </div>
+        <div class="text-base font-semibold text-gray-700 leading-snug line-clamp-2" id="valStatus">--</div>
       </div>
-      <div class="text-[10px] text-gray-400 font-medium">Last active just now</div>
+      <div class="text-[10px] text-gray-400 font-medium" id="lastActive">Last active —</div>
     </div>
   </div>
 
-  <!-- Real-time Chart -->
+  <!-- Chart -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-sm font-semibold text-gray-900">Real-time Vitals</h3>
       <span id="sampleCount" class="text-xs text-gray-400 font-medium">0 samples</span>
     </div>
-    <div class="chart-wrap h-[200px] w-full">
+    <div class="h-[200px] w-full">
       <canvas id="chart"></canvas>
     </div>
   </div>
 
-  <!-- Data History -->
+  <!-- History -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
     <h3 class="text-sm font-semibold text-gray-900 mb-4">Data History (last 10)</h3>
     <div class="table-scroll overflow-x-auto max-h-[250px]">
@@ -265,7 +241,7 @@
     </div>
   </div>
 
-  <!-- Log System Panel -->
+  <!-- Log -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-10">
     <h3 class="text-sm font-semibold text-gray-900 mb-3">System Log</h3>
     <div id="log" class="bg-gray-50 border border-gray-100/50 p-4 rounded-2xl h-[120px] overflow-y-auto text-xs font-mono leading-relaxed text-gray-600"></div>
@@ -273,43 +249,51 @@
 
 </div>
 
-<!-- System Scripts (GATT - DB - UI Controller) -->
 <script>
-const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
-const CHAR_UUID    = "abcd1234-5678-90ab-cdef-1234567890ab";
-const MAX_HISTORY  = 500;
-const MAX_CHART    = 30;
+// =====================================================================
+//  KONFIGURASI
+// =====================================================================
+const SERVICE_UUID   = "12345678-1234-1234-1234-1234567890ab";
+const CHAR_UUID      = "abcd1234-5678-90ab-cdef-1234567890ab";
+const MAX_HISTORY    = 500;
+const MAX_CHART      = 30;
+const TARGET_STEPS   = 10000;
+const TARGET_CAL     = 270;    // target kalori
+const TARGET_EXERCISE = 25;    // menit
+const TARGET_STAND   = 12;     // jam
+const BAT_MIN_V      = 3.30;   // baterai 0%
+const BAT_MAX_V      = 4.20;   // baterai 100%
+const KCAL_PER_STEP  = 0.04;   // estimasi
 
-let bleDevice = null;
-let bleChar   = null;
-let history   = [];
-let chart;
+let bleDevice = null, bleChar = null, history = [], chart, heartMini;
+let lastDataTime = null;
 
 const $ = id => document.getElementById(id);
 const logBox = $('log');
 
 function log(msg, type = '') {
   const t = new Date().toLocaleTimeString('id-ID');
-  const span = document.createElement('div');
-  let typeClass = 'text-gray-400';
-  if (type === 'ok') typeClass = 'text-emerald-500 font-semibold';
-  if (type === 'err') typeClass = 'text-red-500 font-semibold';
-  if (type === 'rx') typeClass = 'text-blue-500';
-  
-  span.innerHTML = `<span class="text-gray-300 font-normal">[${t}]</span> <span class="${typeClass}">${msg}</span>`;
-  logBox.prepend(span);
+  const el = document.createElement('div');
+  let cls = 'text-gray-400';
+  if (type === 'ok')  cls = 'text-emerald-500 font-semibold';
+  if (type === 'err') cls = 'text-red-500 font-semibold';
+  if (type === 'rx')  cls = 'text-blue-500';
+  el.innerHTML = `<span class="text-gray-300 font-normal">[${t}]</span> <span class="${cls}">${msg}</span>`;
+  logBox.prepend(el);
   if (logBox.childNodes.length > 200) logBox.removeChild(logBox.lastChild);
 }
 
-// DATABASE IndexedDB
-const DB_NAME = 'esp32_monitor';
+// =====================================================================
+//  IndexedDB
+// =====================================================================
+const DB_NAME  = 'esp32_monitor';
 const DB_STORE = 'readings';
 let db = null;
 
 function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = (e) => {
+    req.onupgradeneeded = e => {
       const database = e.target.result;
       if (!database.objectStoreNames.contains(DB_STORE)) {
         const store = database.createObjectStore(DB_STORE, { keyPath: 'id', autoIncrement: true });
@@ -317,71 +301,166 @@ function openDB() {
       }
     };
     req.onsuccess = () => { db = req.result; resolve(db); };
-    req.onerror = () => reject(req.error);
+    req.onerror   = () => reject(req.error);
   });
 }
-
-function saveReading(reading) {
+function saveReading(r) {
   if (!db) return;
-  const tx = db.transaction(DB_STORE, 'readwrite');
-  tx.objectStore(DB_STORE).add(reading);
+  db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).add(r);
 }
-
 function loadHistory() {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (!db) return resolve([]);
-    const tx = db.transaction(DB_STORE, 'readonly');
-    const req = tx.objectStore(DB_STORE).getAll();
+    const req = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).getAll();
     req.onsuccess = () => resolve(req.result.slice(-MAX_HISTORY));
-    req.onerror = () => resolve([]);
+    req.onerror   = () => resolve([]);
   });
 }
-
 function clearDB() {
   if (!db) return;
-  const tx = db.transaction(DB_STORE, 'readwrite');
-  tx.objectStore(DB_STORE).clear();
+  db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).clear();
   log('Database lokal dibersihkan', 'ok');
 }
 
+// =====================================================================
+//  PARSER
+// =====================================================================
 function parsePacket(text) {
-  const parts = text.split(',');
-  if (parts.length < 6) return null;
+  const p = text.split(',');
+  if (p.length < 6) return null;
   return {
-    ts:      Date.now(),
-    uptime:  parseInt(parts[0]),
-    hr:      parseInt(parts[1]),
-    spo2:    parseInt(parts[2]),
-    steps:   parseInt(parts[3]),
-    bat:     parseFloat(parts[4]),
-    status:  parts.slice(5).join(',').trim()
+    ts:     Date.now(),
+    uptime: parseInt(p[0]) || 0,
+    hr:     parseInt(p[1]) || 0,
+    spo2:   parseInt(p[2]) || 0,
+    steps:  parseInt(p[3]) || 0,
+    bat:    parseFloat(p[4]) || 0,
+    status: p.slice(5).join(',').trim()
   };
 }
 
-function getStatusBadge(status) {
-  if (status === 'NORMAL_BLE' || status === 'NORMAL_OFFLINE' || status === 'NORMAL') {
-    return 'bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
-  }
-  if (status.startsWith('WARNING') || status === 'TEMPELKAN_JARI' || status === 'JARI_TIDAK_TERDETEKSI') {
-    return 'bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
-  }
-  if (status.startsWith('ERROR')) {
-    return 'bg-red-50 text-red-600 border border-red-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
-  }
-  return 'bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
+// =====================================================================
+//  KONVERSI DATA
+// =====================================================================
+function batteryPercent(v) {
+  if (!v) return 0;
+  const pct = ((v - BAT_MIN_V) / (BAT_MAX_V - BAT_MIN_V)) * 100;
+  return Math.max(0, Math.min(100, pct));
+}
+function caloriesFromSteps(steps) {
+  return Math.round(steps * KCAL_PER_STEP);
+}
+// Ring: set stroke-dashoffset (0 = full, dasharray = empty)
+function setRing(elId, dashArray, progress) {
+  const el = $(elId);
+  if (!el) return;
+  const p = Math.max(0, Math.min(1, progress));
+  el.setAttribute('stroke-dashoffset', (dashArray * (1 - p)).toFixed(2));
 }
 
+function getStatusClass(status) {
+  if (['NORMAL_BLE','NORMAL_OFFLINE','NORMAL'].includes(status))
+    return 'bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-full text-[10px] font-bold inline-block';
+  if (status.startsWith('WARNING') || status === 'TEMPELKAN_JARI' || status === 'JARI_TIDAK_TERDETEKSI')
+    return 'bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-full text-[10px] font-bold inline-block';
+  if (status.startsWith('ERROR'))
+    return 'bg-red-50 text-red-600 border border-red-100 px-2.5 py-1 rounded-full text-[10px] font-bold inline-block';
+  return 'bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-full text-[10px] font-bold inline-block';
+}
+
+// =====================================================================
+//  UI UPDATE — DATA-DRIVEN
+// =====================================================================
 function updateUI(d) {
-  // Update Top Ring details
-  $('overviewHr').textContent = d.hr \vert{}\vert{} '--';$('moveVal').textContent = d.hr ? Math.round(d.hr * 1.8) : '--'; // Simulating calorie burns roughly
-  
-  $('valHr').innerHTML     = `${d.hr || '--'} <span class="text-xs font-normal text-gray-400">bpm</span>`;
-  $('valSpo2').innerHTML   = `${d.spo2 || '--'} <span class="text-xs font-normal text-gray-400">%</span>`;
-  $('valStep').textContent = d.steps \vert{}\vert{} '--';$('valBat').innerHTML    = `${d.bat ? d.bat.toFixed(2) : '--'} <span class="text-xs font-normal text-gray-400">V</span>`;
-  $('valStatus').innerHTML = `<span class="${getStatusBadge(d.status)}">${d.status}</span>`;
+  lastDataTime = Date.now();
+
+  // === Center circle: live HR ===
+  $('overviewHr').textContent = d.hr > 0 ? d.hr : '--';
+
+  // === Rings ===
+  // Move ring: steps / TARGET_STEPS
+  const moveProg = d.steps / TARGET_STEPS;
+  setRing('ringMove', 289.02, moveProg);
+
+  // Exercise ring: pakai uptime (detik) sebagai proxy menit aktif
+  // Asumsi: 1 menit uptime = 1 menit exercise, target 25 menit
+  const exerciseMin = Math.floor(d.uptime / 60);
+  const exerciseProg = exerciseMin / TARGET_EXERCISE;
+  setRing('ringExercise', 238.76, exerciseProg);
+
+  // Stand ring: uptime (jam) target 12 jam
+  const standHours = d.uptime / 3600;
+  const standProg = standHours / TARGET_STAND;
+  setRing('ringStand', 188.4, standProg);
+
+  // === Counters ===
+  const kcal = caloriesFromSteps(d.steps);
+  $('moveVal').textContent     = kcal;
+  $('exerciseVal').textContent = exerciseMin;
+  $('standVal').textContent    = standHours.toFixed(1);
+
+  // === Steps pill ===
+  $('valStepPill').textContent = d.steps.toLocaleString('id-ID');
+
+  // === Heart card ===
+  $('valHr').innerHTML = `${d.hr || '--'} <span class="text-xs font-normal text-gray-400">bpm</span>`;
+
+  // === SpO2 card ===
+  $('valSpo2').innerHTML = `${d.spo2 || '--'} <span class="text-xs font-normal text-gray-400">%</span>`;
+  $('spo2Bar').style.width = `${Math.max(0, Math.min(100, d.spo2))}%`;
+  if (d.spo2 >= 95 && d.spo2 <= 100) {
+    $('spo2Hint').textContent = '95-100% Ideal';
+    $('spo2Hint').className = 'absolute bottom-3 right-0 text-[10px] text-emerald-500 font-semibold';
+  } else if (d.spo2 >= 90) {
+    $('spo2Hint').textContent = 'Di bawah ideal';
+    $('spo2Hint').className = 'absolute bottom-3 right-0 text-[10px] text-amber-500 font-semibold';
+  } else if (d.spo2 > 0) {
+    $('spo2Hint').textContent = '⚠ Rendah!';
+    $('spo2Hint').className = 'absolute bottom-3 right-0 text-[10px] text-red-500 font-semibold';
+  } else {
+    $('spo2Hint').textContent = 'Menunggu data';
+    $('spo2Hint').className = 'absolute bottom-3 right-0 text-[10px] text-gray-400 font-medium';
+  }
+
+  // === Battery ===
+  $('valBat').innerHTML = `${d.bat ? d.bat.toFixed(2) : '--'} <span class="text-xs font-normal text-gray-400">V</span>`;
+  const batPct = batteryPercent(d.bat);
+  $('batBar').style.width = `${batPct}%`;
+  $('batPct').textContent = `${Math.round(batPct)}%`;
+  // Warna baterai berubah
+  let batColor = 'bg-amber-400';
+  if (batPct > 60) batColor = 'bg-emerald-400';
+  else if (batPct < 20) batColor = 'bg-red-500';
+  $('batBar').className = `bar-fill h-full ${batColor} rounded-full`;
+
+  // === Status ===
+  $('valStatus').innerHTML = `<span class="${getStatusClass(d.status)}">${d.status}</span>`;
+
+  // === Sampel ===
   $('sampleCount').textContent = `${history.length} samples`;
+
+  // === Update heart mini chart ===
+  updateHeartMini();
 }
 
+function updateLastActive() {
+  if (!lastDataTime) {
+    $('lastActive').textContent = 'Last active —';
+    return;
+  }
+  const sec = Math.floor((Date.now() - lastDataTime) / 1000);
+  let txt;
+  if (sec < 5)       txt = 'Last active just now';
+  else if (sec < 60) txt = `Last active ${sec}s ago`;
+  else if (sec < 3600) txt = `Last active ${Math.floor(sec/60)}m ago`;
+  else               txt = `Last active ${Math.floor(sec/3600)}h ago`;
+  $('lastActive').textContent = txt;
+}
+setInterval(updateLastActive, 1000);
+
+// =====================================================================
+//  HISTORY TABLE
+// =====================================================================
 function renderHistory() {
   const tbody = $('historyBody');
   const recent = history.slice(-10).reverse();
@@ -394,13 +473,16 @@ function renderHistory() {
       <td class="py-3.5">${new Date(d.ts).toLocaleTimeString('id-ID')}</td>
       <td class="py-3.5 text-center font-bold text-gray-900">${d.hr}</td>
       <td class="py-3.5 text-center">${d.spo2}%</td>
-      <td class="py-3.5 text-center">${d.steps}</td>
+      <td class="py-3.5 text-center">${d.steps.toLocaleString('id-ID')}</td>
       <td class="py-3.5 text-right font-mono">${d.bat.toFixed(2)}V</td>
-      <td class="py-3.5 text-right"><span class="${getStatusBadge(d.status)}">${d.status}</span></td>
+      <td class="py-3.5 text-right"><span class="${getStatusClass(d.status)}">${d.status}</span></td>
     </tr>
   `).join('');
 }
 
+// =====================================================================
+//  MAIN CHART
+// =====================================================================
 function initChart() {
   const ctx = $('chart').getContext('2d');
   chart = new Chart(ctx, {
@@ -412,46 +494,30 @@ function initChart() {
           label: 'Heart Rate (bpm)',
           data: [],
           borderColor: '#ff4d6d',
-          backgroundColor: 'rgba(255, 77, 109, 0.05)',
+          backgroundColor: 'rgba(255,77,109,0.05)',
           tension: 0.45, borderWidth: 2.5, pointRadius: 0, fill: true, yAxisID: 'y'
         },
         {
           label: 'SpO₂ (%)',
           data: [],
           borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.03)',
+          backgroundColor: 'rgba(59,130,246,0.03)',
           tension: 0.45, borderWidth: 2.5, pointRadius: 0, fill: true, yAxisID: 'y1'
         }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
+      responsive: true, maintainAspectRatio: false, animation: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color: '#4b5563', font: { size: 11, family: 'sans-serif', weight: '500' }, usePointStyle: true, boxWidth: 6 } }
+        legend: { labels: { color: '#4b5563', font: { size: 11, weight: '500' }, usePointStyle: true, boxWidth: 6 } }
       },
       scales: {
-        x: {
-          ticks: { color: '#9ca3af', font: { size: 10 } },
-          grid: { color: '#f3f4f6' },
-          border: { display: false }
-        },
-        y: {
-          position: 'left',
-          ticks: { color: '#ff4d6d', font: { size: 10, weight: '600' } },
-          grid: { color: '#f9fafb' },
-          border: { display: false },
-          suggestedMin: 50, suggestedMax: 120
-        },
-        y1: {
-          position: 'right',
-          ticks: { color: '#3b82f6', font: { size: 10, weight: '600' } },
-          grid: { drawOnChartArea: false },
-          border: { display: false },
-          suggestedMin: 90, suggestedMax: 100
-        }
+        x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { color: '#f3f4f6' }, border: { display: false } },
+        y: { position: 'left', ticks: { color: '#ff4d6d', font: { size: 10, weight: '600' } },
+             grid: { color: '#f9fafb' }, border: { display: false }, suggestedMin: 50, suggestedMax: 120 },
+        y1:{ position: 'right', ticks: { color: '#3b82f6', font: { size: 10, weight: '600' } },
+             grid: { drawOnChartArea: false }, border: { display: false }, suggestedMin: 90, suggestedMax: 100 }
       }
     }
   });
@@ -469,6 +535,47 @@ function updateChart(d) {
   chart.update('none');
 }
 
+// =====================================================================
+//  HEART MINI CHART (ECG-style)
+// =====================================================================
+function initHeartMini() {
+  const ctx = $('heartMini').getContext('2d');
+  heartMini = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        borderColor: 'rgba(239,68,68,0.85)',
+        backgroundColor: 'rgba(239,68,68,0.08)',
+        tension: 0.4, borderWidth: 1.8, pointRadius: 0, fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { display: false },
+        y: { display: false, suggestedMin: 40, suggestedMax: 140 }
+      }
+    }
+  });
+}
+function updateHeartMini() {
+  if (!heartMini) return;
+  const last = history[history.length - 1];
+  heartMini.data.labels.push('');
+  heartMini.data.datasets[0].data.push(last ? last.hr : 0);
+  if (heartMini.data.labels.length > 40) {
+    heartMini.data.labels.shift();
+    heartMini.data.datasets[0].data.shift();
+  }
+  heartMini.update('none');
+}
+
+// =====================================================================
+//  HANDLE DATA
+// =====================================================================
 function handleReading(d) {
   if (!d) return;
   history.push(d);
@@ -479,13 +586,14 @@ function handleReading(d) {
   updateChart(d);
 }
 
+// =====================================================================
+//  BLE CONNECTION
+// =====================================================================
 function setConnected(state) {
   const dot = $('statusDot');
-  if (state) {
-    dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]";
-  } else {
-    dot.className = "w-2.5 h-2.5 rounded-full bg-red-500";
-  }
+  dot.className = state
+    ? "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+    : "w-2.5 h-2.5 rounded-full bg-red-500";
   $('statusText').textContent = state ? 'Connected' : 'Disconnected';
   $('btnConnect').disabled    = state;
   $('btnDisconnect').disabled = !state;
@@ -493,7 +601,7 @@ function setConnected(state) {
 
 async function connectBLE() {
   if (!navigator.bluetooth) {
-    log('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge terbaru.', 'err');
+    log('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge.', 'err');
     alert('Browser tidak mendukung Web Bluetooth.');
     return;
   }
@@ -529,9 +637,7 @@ async function connectBLE() {
 }
 
 function disconnectBLE() {
-  if (bleDevice && bleDevice.gatt.connected) {
-    bleDevice.gatt.disconnect();
-  }
+  if (bleDevice && bleDevice.gatt.connected) bleDevice.gatt.disconnect();
 }
 
 function onDisconnected() {
@@ -541,50 +647,53 @@ function onDisconnected() {
 }
 
 function onDataReceived(event) {
-  const value = event.target.value;
-  const text = new TextDecoder().decode(value);
+  const text = new TextDecoder().decode(event.target.value);
   log(`RX: ${text}`, 'rx');
   const d = parsePacket(text);
   if (d) handleReading(d);
   else log('Format data tidak dikenali', 'err');
 }
 
+// =====================================================================
+//  EXPORT CSV
+// =====================================================================
 function exportCSV() {
-  if (history.length === 0) {
-    alert('Belum ada data untuk di-export');
-    return;
-  }
+  if (history.length === 0) { alert('Belum ada data'); return; }
   const header = 'timestamp,uptime_s,hr_bpm,spo2_pct,steps,battery_v,status\n';
   const rows = history.map(d =>
     `${new Date(d.ts).toISOString()},${d.uptime},${d.hr},${d.spo2},${d.steps},${d.bat.toFixed(2)},${d.status}`
   ).join('\n');
   const blob = new Blob([header + rows], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url;
-  a.download = `esp32_monitor_${Date.now()}.csv`;
+  const a = document.createElement('a');
+  a.href = url; a.download = `esp32_monitor_${Date.now()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   log(`Export ${history.length} baris ke CSV`, 'ok');
 }
 
+// =====================================================================
+//  INIT
+// =====================================================================
 async function init() {
   await openDB();
   initChart();
+  initHeartMini();
 
   history = await loadHistory();
   if (history.length > 0) {
     log(`Memuat ${history.length} sampel dari database lokal`, 'ok');
-    const last = history[history.length - 1];
-    updateUI(last);
+    updateUI(history[history.length - 1]);
     history.slice(-MAX_CHART).forEach(d => updateChart(d));
   } else {
     log('Database kosong. Siap menerima data baru.');
   }
   renderHistory();
 
-  $('btnConnect').addEventListener('click', connectBLE);$('btnDisconnect').addEventListener('click', disconnectBLE);
-  $('btnExport').addEventListener('click', exportCSV);$('btnClear').addEventListener('click', async () => {
+  $('btnConnect').addEventListener('click', connectBLE);
+  $('btnDisconnect').addEventListener('click', disconnectBLE);
+  $('btnExport').addEventListener('click', exportCSV);
+  $('btnClear').addEventListener('click', async () => {
     if (confirm('Hapus semua data riwayat?')) {
       clearDB();
       history = [];
@@ -592,7 +701,11 @@ async function init() {
       chart.data.labels = [];
       chart.data.datasets.forEach(ds => ds.data = []);
       chart.update();
-      updateUI({ hr: 0, spo2: 0, steps: 0, bat: 0, status: 'CLEARED' });
+      if (heartMini) {
+        heartMini.data.labels = [];
+        heartMini.data.datasets[0].data = [];
+        heartMini.update();
+      }
       $('sampleCount').textContent = '0 samples';
     }
   });
