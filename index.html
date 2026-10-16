@@ -25,6 +25,14 @@
   .table-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
   .ring { transition: stroke-dashoffset 0.6s ease-out; }
   .bar-fill { transition: width 0.5s ease-out; }
+
+  /* Drawer animations */
+  #drawer {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  #drawerOverlay {
+    transition: opacity 0.3s ease;
+  }
 </style>
 </head>
 <body class="bg-healthBg text-healthDark min-h-screen font-sans antialiased p-5">
@@ -35,11 +43,13 @@
   <header class="flex justify-between items-center py-4 mb-4">
     <h1 class="text-3xl font-semibold text-gray-900 tracking-tight">Health</h1>
     <div class="flex items-center gap-3">
+      <!-- BLE status (tetap terlihat) -->
       <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-sm font-medium border border-gray-100">
         <span class="w-2.5 h-2.5 rounded-full bg-red-500 transition-all duration-300" id="statusDot"></span>
         <span id="statusText" class="text-gray-700">Disconnected</span>
       </div>
-      <button class="text-gray-400 hover:text-gray-600 transition p-1">
+      <!-- Hamburger button -->
+      <button id="btnMenu" class="text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition p-2 rounded-full" aria-label="Menu">
         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
           <circle cx="6" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="18" cy="12" r="2"></circle>
           <circle cx="6" cy="6" r="2"></circle><circle cx="12" cy="6" r="2"></circle><circle cx="18" cy="6" r="2"></circle>
@@ -48,39 +58,101 @@
     </div>
   </header>
 
-  <!-- Control Panel -->
-  <div class="mb-6 bg-white p-4 rounded-[28px] shadow-sm border border-gray-50/50">
-    <h2 class="text-xs uppercase font-semibold text-gray-400 tracking-wider mb-3 px-1">Control Panel (ESP32-C6)</h2>
-    <div class="flex flex-wrap gap-2">
-      <button id="btnConnect" class="flex-1 min-w-[120px] bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-800 text-sm font-medium py-3 px-4 rounded-2xl transition duration-200 shadow-sm border border-gray-200">
-        Connect Device
-      </button>
-      <button id="btnDisconnect" disabled class="flex-1 min-w-[120px] bg-red-50 hover:bg-red-100 disabled:opacity-40 disabled:hover:bg-red-50 text-red-600 text-sm font-medium py-3 px-4 rounded-2xl transition duration-200 border border-red-100">
-        Disconnect
-      </button>
-      <button id="btnExport" class="flex-1 min-w-[100px] bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium py-3 px-4 rounded-2xl transition duration-200 border border-gray-100 shadow-sm">
-        Export CSV
-      </button>
-      <button id="btnClear" class="flex-1 min-w-[100px] bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium py-3 px-4 rounded-2xl transition duration-200 border border-gray-100 shadow-sm">
-        Clear Data
+  <!-- ============================================================
+       DRAWER — Control Panel (hidden by default)
+       ============================================================ -->
+  <!-- Overlay -->
+  <div id="drawerOverlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none z-40"></div>
+
+  <!-- Drawer panel -->
+  <aside id="drawer" class="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-50 translate-x-full flex flex-col">
+    <!-- Drawer header -->
+    <div class="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900">Control Panel</h2>
+        <p class="text-xs text-gray-400 mt-0.5">ESP32-C6 Management</p>
+      </div>
+      <button id="btnCloseDrawer" class="text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition p-2 rounded-full" aria-label="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
       </button>
     </div>
-  </div>
+
+    <!-- Drawer body -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-4">
+
+      <!-- Connection status (info) -->
+      <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+        <div class="text-xs uppercase font-semibold text-gray-400 tracking-wider mb-2">Status</div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-red-500" id="drawerStatusDot"></span>
+          <span class="text-sm font-medium text-gray-700" id="drawerStatusText">Disconnected</span>
+        </div>
+        <div class="text-xs text-gray-400 mt-2" id="drawerDeviceName">Belum terhubung</div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="space-y-2">
+        <div class="text-xs uppercase font-semibold text-gray-400 tracking-wider mb-2">Actions</div>
+
+        <button id="btnConnect" class="w-full bg-gray-900 hover:bg-gray-800 active:bg-black text-white text-sm font-medium py-3.5 px-4 rounded-2xl transition duration-200 shadow-sm flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+          </svg>
+          Connect Device
+        </button>
+
+        <button id="btnDisconnect" disabled class="w-full bg-red-50 hover:bg-red-100 disabled:opacity-40 disabled:hover:bg-red-50 text-red-600 text-sm font-medium py-3.5 px-4 rounded-2xl transition duration-200 border border-red-100 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+          Disconnect
+        </button>
+
+        <button id="btnExport" class="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium py-3.5 px-4 rounded-2xl transition duration-200 border border-gray-100 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Export CSV
+        </button>
+
+        <button id="btnClear" class="w-full bg-gray-50 hover:bg-red-50 hover:text-red-600 hover:border-red-100 text-gray-700 text-sm font-medium py-3.5 px-4 rounded-2xl transition duration-200 border border-gray-100 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+          </svg>
+          Clear Data
+        </button>
+      </div>
+
+      <!-- Info -->
+      <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100 mt-6">
+        <div class="text-xs uppercase font-semibold text-blue-500 tracking-wider mb-1.5">Info</div>
+        <p class="text-xs text-blue-700 leading-relaxed">
+          Pastikan ESP32-C6 menyala dan menampilkan status <span class="font-mono font-bold">BLE: Offline</span> di OLED sebelum menekan tombol Connect.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Drawer footer -->
+    <div class="px-6 py-4 border-t border-gray-100 text-center">
+      <p class="text-[10px] text-gray-400">Wearable Monitor v1.0 · ESP32-C6</p>
+    </div>
+  </aside>
+  <!-- ============================================================ -->
 
   <!-- Activity Overview -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm mb-4 border border-gray-50">
     <div class="flex justify-center mb-6 relative">
       <div class="relative w-44 h-44 flex items-center justify-center">
         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-          <!-- Inner blue (Stand) -->
           <circle cx="50" cy="50" r="30" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
           <circle id="ringStand" class="ring" cx="50" cy="50" r="30" stroke="#60a5fa" stroke-width="6"
                   stroke-dasharray="188.4" stroke-dashoffset="188.4" stroke-linecap="round" fill="transparent" />
-          <!-- Middle yellow (Exercise) -->
           <circle cx="50" cy="50" r="38" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
           <circle id="ringExercise" class="ring" cx="50" cy="50" r="38" stroke="#fbbf24" stroke-width="6"
                   stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" fill="transparent" />
-          <!-- Outer orange-red (Move) -->
           <circle cx="50" cy="50" r="46" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
           <circle id="ringMove" class="ring" cx="50" cy="50" r="46" stroke="#f87171" stroke-width="6"
                   stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" fill="transparent" />
@@ -95,7 +167,6 @@
       </div>
     </div>
 
-    <!-- Counters -->
     <div class="grid grid-cols-3 gap-2 border-b border-gray-100 pb-5 mb-4 text-center">
       <div>
         <div class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-400 mb-0.5">
@@ -120,7 +191,6 @@
       </div>
     </div>
 
-    <!-- Today's steps -->
     <div class="bg-gray-50 flex items-center justify-between px-4 py-2.5 rounded-full text-xs text-gray-500 font-medium border border-gray-100/50">
       <div class="flex items-center gap-2">
         <svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
@@ -131,14 +201,12 @@
       <div class="flex items-center gap-1 text-gray-700">
         <span class="font-bold text-sm" id="valStepPill">--</span>
         <span class="text-gray-400 font-normal">/10,000 steps</span>
-        <svg class="w-3.5 h-3.5 text-gray-300 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4m0-4h.01"></path></svg>
       </div>
     </div>
   </div>
 
-  <!-- 2x2 Grid Cards -->
+  <!-- 2x2 Grid -->
   <div class="grid grid-cols-2 gap-4 mb-6">
-    <!-- Heart -->
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
         <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-2">
@@ -156,7 +224,6 @@
       </div>
     </div>
 
-    <!-- SpO2 -->
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
         <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-2">
@@ -177,7 +244,6 @@
       </div>
     </div>
 
-    <!-- Battery -->
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
         <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-2">
@@ -198,7 +264,6 @@
       </div>
     </div>
 
-    <!-- Status -->
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
         <div class="text-xs font-semibold text-gray-400 mb-3">Status</div>
@@ -258,12 +323,12 @@ const CHAR_UUID      = "abcd1234-5678-90ab-cdef-1234567890ab";
 const MAX_HISTORY    = 500;
 const MAX_CHART      = 30;
 const TARGET_STEPS   = 10000;
-const TARGET_CAL     = 270;    // target kalori
-const TARGET_EXERCISE = 25;    // menit
-const TARGET_STAND   = 12;     // jam
-const BAT_MIN_V      = 3.30;   // baterai 0%
-const BAT_MAX_V      = 4.20;   // baterai 100%
-const KCAL_PER_STEP  = 0.04;   // estimasi
+const TARGET_CAL     = 270;
+const TARGET_EXERCISE = 25;
+const TARGET_STAND   = 12;
+const BAT_MIN_V      = 3.30;
+const BAT_MAX_V      = 4.20;
+const KCAL_PER_STEP  = 0.04;
 
 let bleDevice = null, bleChar = null, history = [], chart, heartMini;
 let lastDataTime = null;
@@ -281,6 +346,23 @@ function log(msg, type = '') {
   el.innerHTML = `<span class="text-gray-300 font-normal">[${t}]</span> <span class="${cls}">${msg}</span>`;
   logBox.prepend(el);
   if (logBox.childNodes.length > 200) logBox.removeChild(logBox.lastChild);
+}
+
+// =====================================================================
+//  DRAWER CONTROL
+// =====================================================================
+const drawer = $('drawer');
+const overlay = $('drawerOverlay');
+
+function openDrawer() {
+  drawer.classList.remove('translate-x-full');
+  overlay.classList.remove('opacity-0', 'pointer-events-none');
+  overlay.classList.add('opacity-100');
+}
+function closeDrawer() {
+  drawer.classList.add('translate-x-full');
+  overlay.classList.add('opacity-0', 'pointer-events-none');
+  overlay.classList.remove('opacity-100');
 }
 
 // =====================================================================
@@ -340,24 +422,20 @@ function parsePacket(text) {
 }
 
 // =====================================================================
-//  KONVERSI DATA
+//  KONVERSI
 // =====================================================================
 function batteryPercent(v) {
   if (!v) return 0;
   const pct = ((v - BAT_MIN_V) / (BAT_MAX_V - BAT_MIN_V)) * 100;
   return Math.max(0, Math.min(100, pct));
 }
-function caloriesFromSteps(steps) {
-  return Math.round(steps * KCAL_PER_STEP);
-}
-// Ring: set stroke-dashoffset (0 = full, dasharray = empty)
+function caloriesFromSteps(steps) { return Math.round(steps * KCAL_PER_STEP); }
 function setRing(elId, dashArray, progress) {
   const el = $(elId);
   if (!el) return;
   const p = Math.max(0, Math.min(1, progress));
   el.setAttribute('stroke-dashoffset', (dashArray * (1 - p)).toFixed(2));
 }
-
 function getStatusClass(status) {
   if (['NORMAL_BLE','NORMAL_OFFLINE','NORMAL'].includes(status))
     return 'bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-full text-[10px] font-bold inline-block';
@@ -369,45 +447,27 @@ function getStatusClass(status) {
 }
 
 // =====================================================================
-//  UI UPDATE — DATA-DRIVEN
+//  UI UPDATE
 // =====================================================================
 function updateUI(d) {
   lastDataTime = Date.now();
 
-  // === Center circle: live HR ===
   $('overviewHr').textContent = d.hr > 0 ? d.hr : '--';
 
-  // === Rings ===
-  // Move ring: steps / TARGET_STEPS
-  const moveProg = d.steps / TARGET_STEPS;
-  setRing('ringMove', 289.02, moveProg);
+  setRing('ringMove',     289.02, d.steps / TARGET_STEPS);
+  setRing('ringExercise', 238.76, Math.floor(d.uptime / 60) / TARGET_EXERCISE);
+  setRing('ringStand',    188.4,  (d.uptime / 3600) / TARGET_STAND);
 
-  // Exercise ring: pakai uptime (detik) sebagai proxy menit aktif
-  // Asumsi: 1 menit uptime = 1 menit exercise, target 25 menit
-  const exerciseMin = Math.floor(d.uptime / 60);
-  const exerciseProg = exerciseMin / TARGET_EXERCISE;
-  setRing('ringExercise', 238.76, exerciseProg);
-
-  // Stand ring: uptime (jam) target 12 jam
-  const standHours = d.uptime / 3600;
-  const standProg = standHours / TARGET_STAND;
-  setRing('ringStand', 188.4, standProg);
-
-  // === Counters ===
   const kcal = caloriesFromSteps(d.steps);
   $('moveVal').textContent     = kcal;
-  $('exerciseVal').textContent = exerciseMin;
-  $('standVal').textContent    = standHours.toFixed(1);
+  $('exerciseVal').textContent = Math.floor(d.uptime / 60);
+  $('standVal').textContent    = (d.uptime / 3600).toFixed(1);
 
-  // === Steps pill ===
   $('valStepPill').textContent = d.steps.toLocaleString('id-ID');
-
-  // === Heart card ===
   $('valHr').innerHTML = `${d.hr || '--'} <span class="text-xs font-normal text-gray-400">bpm</span>`;
-
-  // === SpO2 card ===
   $('valSpo2').innerHTML = `${d.spo2 || '--'} <span class="text-xs font-normal text-gray-400">%</span>`;
   $('spo2Bar').style.width = `${Math.max(0, Math.min(100, d.spo2))}%`;
+
   if (d.spo2 >= 95 && d.spo2 <= 100) {
     $('spo2Hint').textContent = '95-100% Ideal';
     $('spo2Hint').className = 'absolute bottom-3 right-0 text-[10px] text-emerald-500 font-semibold';
@@ -422,38 +482,29 @@ function updateUI(d) {
     $('spo2Hint').className = 'absolute bottom-3 right-0 text-[10px] text-gray-400 font-medium';
   }
 
-  // === Battery ===
   $('valBat').innerHTML = `${d.bat ? d.bat.toFixed(2) : '--'} <span class="text-xs font-normal text-gray-400">V</span>`;
   const batPct = batteryPercent(d.bat);
   $('batBar').style.width = `${batPct}%`;
   $('batPct').textContent = `${Math.round(batPct)}%`;
-  // Warna baterai berubah
   let batColor = 'bg-amber-400';
   if (batPct > 60) batColor = 'bg-emerald-400';
   else if (batPct < 20) batColor = 'bg-red-500';
   $('batBar').className = `bar-fill h-full ${batColor} rounded-full`;
 
-  // === Status ===
   $('valStatus').innerHTML = `<span class="${getStatusClass(d.status)}">${d.status}</span>`;
-
-  // === Sampel ===
   $('sampleCount').textContent = `${history.length} samples`;
 
-  // === Update heart mini chart ===
   updateHeartMini();
 }
 
 function updateLastActive() {
-  if (!lastDataTime) {
-    $('lastActive').textContent = 'Last active —';
-    return;
-  }
+  if (!lastDataTime) { $('lastActive').textContent = 'Last active —'; return; }
   const sec = Math.floor((Date.now() - lastDataTime) / 1000);
   let txt;
-  if (sec < 5)       txt = 'Last active just now';
-  else if (sec < 60) txt = `Last active ${sec}s ago`;
+  if (sec < 5)        txt = 'Last active just now';
+  else if (sec < 60)  txt = `Last active ${sec}s ago`;
   else if (sec < 3600) txt = `Last active ${Math.floor(sec/60)}m ago`;
-  else               txt = `Last active ${Math.floor(sec/3600)}h ago`;
+  else                txt = `Last active ${Math.floor(sec/3600)}h ago`;
   $('lastActive').textContent = txt;
 }
 setInterval(updateLastActive, 1000);
@@ -481,7 +532,7 @@ function renderHistory() {
 }
 
 // =====================================================================
-//  MAIN CHART
+//  CHARTS
 // =====================================================================
 function initChart() {
   const ctx = $('chart').getContext('2d');
@@ -490,28 +541,16 @@ function initChart() {
     data: {
       labels: [],
       datasets: [
-        {
-          label: 'Heart Rate (bpm)',
-          data: [],
-          borderColor: '#ff4d6d',
-          backgroundColor: 'rgba(255,77,109,0.05)',
-          tension: 0.45, borderWidth: 2.5, pointRadius: 0, fill: true, yAxisID: 'y'
-        },
-        {
-          label: 'SpO₂ (%)',
-          data: [],
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59,130,246,0.03)',
-          tension: 0.45, borderWidth: 2.5, pointRadius: 0, fill: true, yAxisID: 'y1'
-        }
+        { label: 'Heart Rate (bpm)', data: [], borderColor: '#ff4d6d',
+          backgroundColor: 'rgba(255,77,109,0.05)', tension: 0.45, borderWidth: 2.5, pointRadius: 0, fill: true, yAxisID: 'y' },
+        { label: 'SpO₂ (%)', data: [], borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.03)', tension: 0.45, borderWidth: 2.5, pointRadius: 0, fill: true, yAxisID: 'y1' }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
       interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { labels: { color: '#4b5563', font: { size: 11, weight: '500' }, usePointStyle: true, boxWidth: 6 } }
-      },
+      plugins: { legend: { labels: { color: '#4b5563', font: { size: 11, weight: '500' }, usePointStyle: true, boxWidth: 6 } } },
       scales: {
         x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { color: '#f3f4f6' }, border: { display: false } },
         y: { position: 'left', ticks: { color: '#ff4d6d', font: { size: 10, weight: '600' } },
@@ -522,7 +561,6 @@ function initChart() {
     }
   });
 }
-
 function updateChart(d) {
   const label = new Date(d.ts).toLocaleTimeString('id-ID', { hour12: false });
   chart.data.labels.push(label);
@@ -534,30 +572,18 @@ function updateChart(d) {
   }
   chart.update('none');
 }
-
-// =====================================================================
-//  HEART MINI CHART (ECG-style)
-// =====================================================================
 function initHeartMini() {
   const ctx = $('heartMini').getContext('2d');
   heartMini = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        data: [],
-        borderColor: 'rgba(239,68,68,0.85)',
-        backgroundColor: 'rgba(239,68,68,0.08)',
-        tension: 0.4, borderWidth: 1.8, pointRadius: 0, fill: true
-      }]
-    },
+    data: { labels: [], datasets: [{
+      data: [], borderColor: 'rgba(239,68,68,0.85)',
+      backgroundColor: 'rgba(239,68,68,0.08)', tension: 0.4, borderWidth: 1.8, pointRadius: 0, fill: true
+    }]},
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
       plugins: { legend: { display: false }, tooltip: { enabled: false } },
-      scales: {
-        x: { display: false },
-        y: { display: false, suggestedMin: 40, suggestedMax: 140 }
-      }
+      scales: { x: { display: false }, y: { display: false, suggestedMin: 40, suggestedMax: 140 } }
     }
   });
 }
@@ -574,7 +600,7 @@ function updateHeartMini() {
 }
 
 // =====================================================================
-//  HANDLE DATA
+//  HANDLE
 // =====================================================================
 function handleReading(d) {
   if (!d) return;
@@ -587,14 +613,23 @@ function handleReading(d) {
 }
 
 // =====================================================================
-//  BLE CONNECTION
+//  BLE
 // =====================================================================
-function setConnected(state) {
+function setConnected(state, name = null) {
+  // Header dot
   const dot = $('statusDot');
   dot.className = state
     ? "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
     : "w-2.5 h-2.5 rounded-full bg-red-500";
   $('statusText').textContent = state ? 'Connected' : 'Disconnected';
+
+  // Drawer status
+  const dDot = $('drawerStatusDot');
+  dDot.className = state ? "w-2.5 h-2.5 rounded-full bg-emerald-500" : "w-2.5 h-2.5 rounded-full bg-red-500";
+  $('drawerStatusText').textContent = state ? 'Connected' : 'Disconnected';
+  $('drawerDeviceName').textContent = state && name ? `Device: ${name}` : 'Belum terhubung';
+
+  // Buttons
   $('btnConnect').disabled    = state;
   $('btnDisconnect').disabled = !state;
 }
@@ -628,7 +663,7 @@ async function connectBLE() {
     await bleChar.startNotifications();
     bleChar.addEventListener('characteristicvaluechanged', onDataReceived);
 
-    setConnected(true);
+    setConnected(true, bleDevice.name);
     log('Terhubung! Menunggu data dari ESP32...', 'ok');
   } catch (err) {
     log(`Gagal connect: ${err.message}`, 'err');
@@ -690,6 +725,15 @@ async function init() {
   }
   renderHistory();
 
+  // === Drawer controls ===
+  $('btnMenu').addEventListener('click', openDrawer);
+  $('btnCloseDrawer').addEventListener('click', closeDrawer);
+  overlay.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  // === Action buttons ===
   $('btnConnect').addEventListener('click', connectBLE);
   $('btnDisconnect').addEventListener('click', disconnectBLE);
   $('btnExport').addEventListener('click', exportCSV);
@@ -710,7 +754,7 @@ async function init() {
     }
   });
 
-  log('Aplikasi siap. Klik "Connect Device" untuk memulai.');
+  log('Aplikasi siap. Buka menu ☰ untuk connect.');
 }
 
 window.addEventListener('DOMContentLoaded', init);
