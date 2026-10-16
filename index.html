@@ -3,257 +3,305 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ESP32-C6 Wearable Monitor</title>
+<title>Health Monitor ESP32-C6</title>
+<!-- Tailwind CSS via CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        },
+        colors: {
+          healthBg: '#f2f5f3',
+          healthDark: '#111111',
+          healthRed: '#ff4d6d',
+          healthOrange: '#f59e0b',
+          healthBlue: '#3b82f6',
+          healthGreen: '#10b981',
+          healthPurple: '#8b5cf6'
+        }
+      }
+    }
+  }
+</script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #0a0e1a;
-    color: #e0e6f0;
-    min-height: 100vh;
-    padding: 20px;
+  /* Menghilangkan scrollbar default untuk table-scroll */
+  .table-scroll::-webkit-scrollbar {
+    width: 4px;
   }
-  .container { max-width: 1200px; margin: 0 auto; }
-
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 24px;
-    background: linear-gradient(135deg, #1a2340, #0f1729);
-    border-radius: 16px;
-    border: 1px solid #2a3555;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  .table-scroll::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 4px;
   }
-  h1 { font-size: 20px; font-weight: 600; }
-  h1 span { color: #4ade80; }
-  .conn-status {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 14px;
-    padding: 6px 14px;
-    border-radius: 20px;
-    background: #1e293b;
-    border: 1px solid #334155;
-  }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; }
-  .dot.on { background: #4ade80; box-shadow: 0 0 10px #4ade80; }
-
-  .controls {
-    display: flex; gap: 10px; flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-  button {
-    padding: 12px 22px;
-    font-size: 14px;
-    font-weight: 600;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
-  }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-primary { background: #3b82f6; color: white; }
-  .btn-primary:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); }
-  .btn-danger  { background: #ef4444; color: white; }
-  .btn-danger:hover:not(:disabled) { background: #dc2626; }
-  .btn-ghost   { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
-  .btn-ghost:hover:not(:disabled) { background: #334155; }
-
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-bottom: 20px;
-  }
-  .card {
-    background: linear-gradient(135deg, #131a2e, #0f1729);
-    border: 1px solid #2a3555;
-    border-radius: 14px;
-    padding: 18px;
-    position: relative;
-    overflow: hidden;
-  }
-  .card::before {
-    content: ''; position: absolute; top: 0; left: 0;
-    width: 4px; height: 100%;
-  }
-  .card.hr::before     { background: #ef4444; }
-  .card.spo2::before   { background: #3b82f6; }
-  .card.step::before   { background: #22c55e; }
-  .card.bat::before    { background: #f59e0b; }
-  .card.status::before { background: #a855f7; }
-  .card-label {
-    font-size: 12px; color: #94a3b8; text-transform: uppercase;
-    letter-spacing: 1px; margin-bottom: 6px;
-  }
-  .card-value {
-    font-size: 28px; font-weight: 700; color: #f1f5f9;
-    line-height: 1.1;
-  }
-  .card-unit { font-size: 14px; color: #94a3b8; margin-left: 4px; font-weight: 400; }
-
-  .panel {
-    background: #0f1729;
-    border: 1px solid #2a3555;
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-  .panel-title {
-    font-size: 14px; font-weight: 600; color: #cbd5e1;
-    margin-bottom: 14px; display: flex; justify-content: space-between;
-    align-items: center;
-  }
-  .chart-wrap { position: relative; height: 220px; }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #1e293b; }
-  th { color: #94a3b8; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-  td { font-family: 'Consolas', monospace; color: #cbd5e1; }
-  tr:hover td { background: #131a2e; }
-
-  .table-scroll { max-height: 300px; overflow-y: auto; }
-
-  #log {
-    background: #050810;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    padding: 12px;
-    font-family: 'Consolas', monospace;
-    font-size: 12px;
-    color: #94a3b8;
-    height: 140px;
-    overflow-y: auto;
-    line-height: 1.6;
-  }
-  #log .ts { color: #475569; }
-  #log .ok { color: #4ade80; }
-  #log .err { color: #ef4444; }
-  #log .rx { color: #60a5fa; }
-
-  .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  .badge-ok    { background: #064e3b; color: #4ade80; }
-  .badge-warn  { background: #78350f; color: #fbbf24; }
-  .badge-err   { background: #7f1d1d; color: #fca5a5; }
-  .badge-info  { background: #1e3a8a; color: #93c5fd; }
-
-  .empty { text-align: center; color: #64748b; padding: 20px; font-style: italic; }
 </style>
 </head>
-<body>
-<div class="container">
+<body class="bg-healthBg text-healthDark min-h-screen font-sans antialiased p-5">
 
-  <header>
-    <h1>⌚ Wearable Monitor <span>ESP32-C6</span></h1>
-    <div class="conn-status">
-      <div class="dot" id="statusDot"></div>
-      <span id="statusText">Disconnected</span>
+<div class="max-w-md mx-auto sm:max-w-2xl md:max-w-3xl">
+
+  <!-- Header -->
+  <header class="flex justify-between items-center py-4 mb-4">
+    <h1 class="text-3xl font-semibold text-gray-900 tracking-tight">Health</h1>
+    <div class="flex items-center gap-3">
+      <!-- BLE status -->
+      <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-sm font-medium border border-gray-100">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500 transition-all duration-300" id="statusDot"></span>
+        <span id="statusText" class="text-gray-700">Disconnected</span>
+      </div>
+      <!-- Menu Dots -->
+      <button class="text-gray-400 hover:text-gray-600 transition p-1">
+        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <circle cx="6" cy="12" r="2"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+          <circle cx="18" cy="12" r="2"></circle>
+          <circle cx="6" cy="6" r="2"></circle>
+          <circle cx="12" cy="6" r="2"></circle>
+          <circle cx="18" cy="6" r="2"></circle>
+        </svg>
+      </button>
     </div>
   </header>
 
-  <div class="controls">
-    <button class="btn-primary" id="btnConnect">🔗 Connect BLE</button>
-    <button class="btn-danger"  id="btnDisconnect" disabled>⛔ Disconnect</button>
-    <button class="btn-ghost"   id="btnExport">💾 Export CSV</button>
-    <button class="btn-ghost"   id="btnClear">🗑️ Clear Data</button>
-  </div>
-
-  <div class="cards">
-    <div class="card hr">
-      <div class="card-label">❤️ Heart Rate</div>
-      <div class="card-value" id="valHr">--<span class="card-unit">bpm</span></div>
-    </div>
-    <div class="card spo2">
-      <div class="card-label">🫁 SpO₂</div>
-      <div class="card-value" id="valSpo2">--<span class="card-unit">%</span></div>
-    </div>
-    <div class="card step">
-      <div class="card-label">👣 Langkah</div>
-      <div class="card-value" id="valStep">--</div>
-    </div>
-    <div class="card bat">
-      <div class="card-label">🔋 Baterai</div>
-      <div class="card-value" id="valBat">--<span class="card-unit">V</span></div>
-    </div>
-    <div class="card status">
-      <div class="card-label">📡 Status</div>
-      <div class="card-value" id="valStatus" style="font-size:16px;">--</div>
+  <!-- Bluetooth & Actions Control Box -->
+  <div class="mb-6 bg-white p-4 rounded-[28px] shadow-sm border border-gray-50/50">
+    <h2 class="text-xs uppercase font-semibold text-gray-400 tracking-wider mb-3 px-1">Control Panel (ESP32-C6)</h2>
+    <div class="flex flex-wrap gap-2">
+      <button id="btnConnect" class="flex-1 min-w-[120px] bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-800 text-sm font-medium py-3 px-4 rounded-2xl transition duration-200 shadow-sm border border-gray-200">
+        Connect Device
+      </button>
+      <button id="btnDisconnect" disabled class="flex-1 min-w-[120px] bg-red-50 hover:bg-red-100 disabled:opacity-40 disabled:hover:bg-red-50 text-red-600 text-sm font-medium py-3 px-4 rounded-2xl transition duration-200 border border-red-100">
+        Disconnect
+      </button>
+      <button id="btnExport" class="flex-1 min-w-[100px] bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium py-3 px-4 rounded-2xl transition duration-200 border border-gray-100 shadow-sm">
+        Export CSV
+      </button>
+      <button id="btnClear" class="flex-1 min-w-[100px] bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium py-3 px-4 rounded-2xl transition duration-200 border border-gray-100 shadow-sm">
+        Clear Data
+      </button>
     </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-title">
-      <span>📈 Grafik Real-time</span>
-      <span style="font-size:11px; color:#64748b;" id="sampleCount">0 sampel</span>
+  <!-- Activity Overview Card (Top Large) -->
+  <div class="bg-white rounded-[28px] p-6 shadow-sm mb-4 border border-gray-50">
+    <div class="flex justify-center mb-6 relative">
+      <!-- Multi concentric progress ring, simulated based on image UI -->
+      <div class="relative w-44 h-44 flex items-center justify-center">
+        <!-- SVG Ring Trackers -->
+        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          <!-- Inner blue (Stand) -->
+          <circle cx="50" cy="50" r="30" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
+          <circle cx="50" cy="50" r="30" stroke="#60a5fa" stroke-width="6" stroke-dasharray="188.4" stroke-dashoffset="60" stroke-linecap="round" fill="transparent" />
+          <!-- Middle yellow (Exercise) -->
+          <circle cx="50" cy="50" r="38" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
+          <circle cx="50" cy="50" r="38" stroke="#fbbf24" stroke-width="6" stroke-dasharray="238.76" stroke-dashoffset="100" stroke-linecap="round" fill="transparent" />
+          <!-- Outer orange-red (Move) -->
+          <circle cx="50" cy="50" r="46" stroke="#f3f4f6" stroke-width="6" fill="transparent" />
+          <circle cx="50" cy="50" r="46" stroke="#f87171" stroke-width="6" stroke-dasharray="289.02" stroke-dashoffset="90" stroke-linecap="round" fill="transparent" />
+        </svg>
+        <div class="absolute inset-0 flex flex-col justify-center items-center">
+          <svg class="w-6 h-6 text-orange-400 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z" />
+          </svg>
+          <span class="text-2xl font-bold tracking-tight" id="overviewHr">--</span>
+          <span class="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">live hr</span>
+        </div>
+      </div>
     </div>
-    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+
+    <!-- Counters -->
+    <div class="grid grid-cols-3 gap-2 border-b border-gray-100 pb-5 mb-4 text-center">
+      <div>
+        <div class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-400 mb-0.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Move
+        </div>
+        <div class="text-xl font-bold text-gray-900" id="moveVal">--</div>
+        <div class="text-[10px] text-gray-400">/270 kcal</div>
+      </div>
+      <div class="border-x border-gray-100">
+        <div class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-400 mb-0.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Exercise
+        </div>
+        <div class="text-xl font-bold text-gray-900">47</div>
+        <div class="text-[10px] text-gray-400">/25 min</div>
+      </div>
+      <div>
+        <div class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-400 mb-0.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>Stand
+        </div>
+        <div class="text-xl font-bold text-gray-900">16</div>
+        <div class="text-[10px] text-gray-400">/12 h</div>
+      </div>
+    </div>
+
+    <!-- Bottom Today's Steps Pill -->
+    <div class="bg-gray-50 flex items-center justify-between px-4 py-2.5 rounded-full text-xs text-gray-500 font-medium border border-gray-100/50">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+        </svg>
+        <span>Today's steps</span>
+      </div>
+      <div class="flex items-center gap-1 text-gray-700">
+        <span class="font-bold text-sm" id="valStep">--</span> <span class="text-gray-400 font-normal">/10,000 steps</span>
+        <svg class="w-3.5 h-3.5 text-gray-300 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4m0-4h.01"></path></svg>
+      </div>
+    </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-title">📋 Riwayat Data (10 Terakhir)</div>
-    <div class="table-scroll">
-      <table>
+  <!-- 2x2 Grid Cards -->
+  <div class="grid grid-cols-2 gap-4 mb-6">
+    <!-- Heart Card (Bottom Left) -->
+    <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
+      <div>
+        <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-2">
+          <span>Heart</span>
+          <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </div>
+        <div class="text-3xl font-bold text-gray-900 tracking-tight" id="valHr">
+          -- <span class="text-xs font-normal text-gray-400">bpm</span>
+        </div>
+      </div>
+      <!-- Mini graph simulation, matching exactly like Image_0.png bottom red waves -->
+      <div class="h-14 mt-4 relative overflow-hidden">
+        <svg class="w-full h-full text-red-400/80" fill="none" viewBox="0 0 100 40" preserveAspectRatio="none">
+          <path d="M0,40 L5,32 L10,38 L15,10 L20,38 L25,32 L30,35 L35,22 L40,38 L45,34 L50,15 L55,39 L60,32 L65,37 L70,5 L75,30 L80,33 L85,14 L90,30 L95,22 L100,40 Z" fill="rgba(239, 68, 68, 0.06)"></path>
+          <path d="M0,40 L5,32 L10,38 L15,10 L20,38 L25,32 L30,35 L35,22 L40,38 L45,34 L50,15 L55,39 L60,32 L65,37 L70,5 L75,30 L80,33 L85,14 L90,30 L95,22 L100,40" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Blood Oxygen (SPO2) -->
+    <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
+      <div>
+        <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-2">
+          <span>Blood Oxygen</span>
+          <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5H18a3.75 3.75 0 0 0 1.332-7.257 3 3 0 0 0-3.758-3.848 5.25 5.25 0 0 0-10.233 2.33A4.502 4.502 0 0 0 2.25 15z" />
+          </svg>
+        </div>
+        <div class="text-3xl font-bold text-gray-900 tracking-tight" id="valSpo2">
+          -- <span class="text-xs font-normal text-gray-400">%</span>
+        </div>
+      </div>
+      <!-- Decorative cloud-based light-blue pattern -->
+      <div class="h-14 mt-4 relative overflow-hidden flex items-end">
+        <div class="w-full h-1 bg-blue-100 rounded-full mb-1 overflow-hidden">
+          <div class="h-full bg-blue-500 rounded-full w-[95%]"></div>
+        </div>
+        <span class="absolute bottom-3 right-0 text-[10px] text-gray-400 font-medium">95-100% Ideal</span>
+      </div>
+    </div>
+
+    <!-- Battery -->
+    <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
+      <div>
+        <div class="flex items-center justify-between text-xs font-semibold text-gray-400 mb-2">
+          <span>Device Battery</span>
+          <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 10.5h.75a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-.75.75H21M3 10.5h.75V12m0 0v1.5H3.75M3.75 12h16.5m-16.5 0V9.75M3.75 14.25V12m16.5 0v2.25m0-4.5V12" />
+          </svg>
+        </div>
+        <div class="text-3xl font-bold text-gray-900 tracking-tight" id="valBat">
+          -- <span class="text-xs font-normal text-gray-400">V</span>
+        </div>
+      </div>
+      <!-- Simulated pill battery scale tracker -->
+      <div class="mb-2 flex items-center gap-2">
+        <div class="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden border border-gray-200">
+          <div class="h-full bg-amber-400 rounded-full" style="width: 80%;"></div>
+        </div>
+        <span class="text-[10px] font-semibold text-gray-500">80%</span>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
+      <div>
+        <div class="text-xs font-semibold text-gray-400 mb-3">Status</div>
+        <div class="text-base font-semibold text-gray-700 leading-snug line-clamp-2" id="valStatus">
+          --
+        </div>
+      </div>
+      <div class="text-[10px] text-gray-400 font-medium">Last active just now</div>
+    </div>
+  </div>
+
+  <!-- Real-time Chart -->
+  <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-sm font-semibold text-gray-900">Real-time Vitals</h3>
+      <span id="sampleCount" class="text-xs text-gray-400 font-medium">0 samples</span>
+    </div>
+    <div class="chart-wrap h-[200px] w-full">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Data History -->
+  <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
+    <h3 class="text-sm font-semibold text-gray-900 mb-4">Data History (last 10)</h3>
+    <div class="table-scroll overflow-x-auto max-h-[250px]">
+      <table class="min-w-full divide-y divide-gray-100 text-xs text-left">
         <thead>
-          <tr>
-            <th>Waktu</th><th>Uptime</th><th>HR</th><th>SpO₂</th>
-            <th>Step</th><th>Baterai</th><th>Status</th>
+          <tr class="text-gray-400 font-medium uppercase tracking-wider">
+            <th class="pb-3">Time</th>
+            <th class="pb-3 text-center">HR</th>
+            <th class="pb-3 text-center">SpO₂</th>
+            <th class="pb-3 text-center">Steps</th>
+            <th class="pb-3 text-right">Battery</th>
+            <th class="pb-3 text-right">Status</th>
           </tr>
         </thead>
-        <tbody id="historyBody">
-          <tr><td colspan="7" class="empty">Belum ada data. Klik "Connect BLE" untuk mulai.</td></tr>
+        <tbody id="historyBody" class="divide-y divide-gray-100 font-medium text-gray-700">
+          <tr><td colspan="6" class="text-center py-6 text-gray-400 italic">No data available. Connect device to start.</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-title">🖥️ Log Konsol</div>
-    <div id="log"></div>
+  <!-- Log System Panel -->
+  <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-10">
+    <h3 class="text-sm font-semibold text-gray-900 mb-3">System Log</h3>
+    <div id="log" class="bg-gray-50 border border-gray-100/50 p-4 rounded-2xl h-[120px] overflow-y-auto text-xs font-mono leading-relaxed text-gray-600"></div>
   </div>
 
 </div>
 
+<!-- System Scripts (GATT - DB - UI Controller) -->
 <script>
-// =====================================================================
-//  KONFIGURASI — SESUAIKAN DENGAN KODE ESP32
-// =====================================================================
 const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
 const CHAR_UUID    = "abcd1234-5678-90ab-cdef-1234567890ab";
 const MAX_HISTORY  = 500;
 const MAX_CHART    = 30;
 
-// =====================================================================
-//  STATE
-// =====================================================================
 let bleDevice = null;
 let bleChar   = null;
 let history   = [];
-let chartHr, chartSpo2;
+let chart;
 
-// =====================================================================
-//  DOM
-// =====================================================================
 const $ = id => document.getElementById(id);
 const logBox = $('log');
 
 function log(msg, type = '') {
   const t = new Date().toLocaleTimeString('id-ID');
   const span = document.createElement('div');
-  span.innerHTML = `<span class="ts">[${t}]</span> <span class="${type}">${msg}</span>`;
+  let typeClass = 'text-gray-400';
+  if (type === 'ok') typeClass = 'text-emerald-500 font-semibold';
+  if (type === 'err') typeClass = 'text-red-500 font-semibold';
+  if (type === 'rx') typeClass = 'text-blue-500';
+  
+  span.innerHTML = `<span class="text-gray-300 font-normal">[${t}]</span> <span class="${typeClass}">${msg}</span>`;
   logBox.prepend(span);
   if (logBox.childNodes.length > 200) logBox.removeChild(logBox.lastChild);
 }
 
-// =====================================================================
-//  INDEEDB — Database lokal
-// =====================================================================
+// DATABASE IndexedDB
 const DB_NAME = 'esp32_monitor';
 const DB_STORE = 'readings';
 let db = null;
@@ -293,12 +341,9 @@ function clearDB() {
   if (!db) return;
   const tx = db.transaction(DB_STORE, 'readwrite');
   tx.objectStore(DB_STORE).clear();
-  log('🗑️ Database lokal dibersihkan', 'ok');
+  log('Database lokal dibersihkan', 'ok');
 }
 
-// =====================================================================
-//  PARSER — Format CSV: "uptime,hr,spo2,steps,battery,status"
-// =====================================================================
 function parsePacket(text) {
   const parts = text.split(',');
   if (parts.length < 6) return null;
@@ -313,48 +358,49 @@ function parsePacket(text) {
   };
 }
 
-// =====================================================================
-//  UI UPDATE
-// =====================================================================
 function getStatusBadge(status) {
-  if (status === 'NORMAL_BLE' || status === 'NORMAL_OFFLINE') return 'badge-ok';
-  if (status.startsWith('WARNING') || status === 'TEMPELKAN_JARI' || status === 'JARI_TIDAK_TERDETEKSI') return 'badge-warn';
-  if (status.startsWith('ERROR')) return 'badge-err';
-  return 'badge-info';
+  if (status === 'NORMAL_BLE' || status === 'NORMAL_OFFLINE' || status === 'NORMAL') {
+    return 'bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
+  }
+  if (status.startsWith('WARNING') || status === 'TEMPELKAN_JARI' || status === 'JARI_TIDAK_TERDETEKSI') {
+    return 'bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
+  }
+  if (status.startsWith('ERROR')) {
+    return 'bg-red-50 text-red-600 border border-red-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
+  }
+  return 'bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
 }
 
 function updateUI(d) {
-  $('valHr').innerHTML     = `${d.hr || '--'}<span class="card-unit">bpm</span>`;
-  $('valSpo2').innerHTML   = `${d.spo2 || '--'}<span class="card-unit">%</span>`;
-  $('valStep').textContent = d.steps;
-  $('valBat').innerHTML    = `${d.bat.toFixed(2)}<span class="card-unit">V</span>`;
-  $('valStatus').innerHTML = `<span class="badge ${getStatusBadge(d.status)}">${d.status}</span>`;
-  $('sampleCount').textContent = `${history.length} sampel`;
+  // Update Top Ring details
+  $('overviewHr').textContent = d.hr \vert{}\vert{} '--';$('moveVal').textContent = d.hr ? Math.round(d.hr * 1.8) : '--'; // Simulating calorie burns roughly
+  
+  $('valHr').innerHTML     = `${d.hr || '--'} <span class="text-xs font-normal text-gray-400">bpm</span>`;
+  $('valSpo2').innerHTML   = `${d.spo2 || '--'} <span class="text-xs font-normal text-gray-400">%</span>`;
+  $('valStep').textContent = d.steps \vert{}\vert{} '--';$('valBat').innerHTML    = `${d.bat ? d.bat.toFixed(2) : '--'} <span class="text-xs font-normal text-gray-400">V</span>`;
+  $('valStatus').innerHTML = `<span class="${getStatusBadge(d.status)}">${d.status}</span>`;
+  $('sampleCount').textContent = `${history.length} samples`;
 }
 
 function renderHistory() {
   const tbody = $('historyBody');
   const recent = history.slice(-10).reverse();
   if (recent.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">Belum ada data.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-gray-400 italic">No data available.</td></tr>';
     return;
   }
   tbody.innerHTML = recent.map(d => `
-    <tr>
-      <td>${new Date(d.ts).toLocaleTimeString('id-ID')}</td>
-      <td>${d.uptime}s</td>
-      <td>${d.hr}</td>
-      <td>${d.spo2}</td>
-      <td>${d.steps}</td>
-      <td>${d.bat.toFixed(2)}V</td>
-      <td><span class="badge ${getStatusBadge(d.status)}">${d.status}</span></td>
+    <tr class="hover:bg-gray-50/50 transition duration-150">
+      <td class="py-3.5">${new Date(d.ts).toLocaleTimeString('id-ID')}</td>
+      <td class="py-3.5 text-center font-bold text-gray-900">${d.hr}</td>
+      <td class="py-3.5 text-center">${d.spo2}%</td>
+      <td class="py-3.5 text-center">${d.steps}</td>
+      <td class="py-3.5 text-right font-mono">${d.bat.toFixed(2)}V</td>
+      <td class="py-3.5 text-right"><span class="${getStatusBadge(d.status)}">${d.status}</span></td>
     </tr>
   `).join('');
 }
 
-// =====================================================================
-//  CHART
-// =====================================================================
 function initChart() {
   const ctx = $('chart').getContext('2d');
   chart = new Chart(ctx, {
@@ -365,16 +411,16 @@ function initChart() {
         {
           label: 'Heart Rate (bpm)',
           data: [],
-          borderColor: '#ef4444',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          tension: 0.3, borderWidth: 2, pointRadius: 0, fill: true, yAxisID: 'y'
+          borderColor: '#ff4d6d',
+          backgroundColor: 'rgba(255, 77, 109, 0.05)',
+          tension: 0.45, borderWidth: 2.5, pointRadius: 0, fill: true, yAxisID: 'y'
         },
         {
           label: 'SpO₂ (%)',
           data: [],
           borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          tension: 0.3, borderWidth: 2, pointRadius: 0, fill: true, yAxisID: 'y1'
+          backgroundColor: 'rgba(59, 130, 246, 0.03)',
+          tension: 0.45, borderWidth: 2.5, pointRadius: 0, fill: true, yAxisID: 'y1'
         }
       ]
     },
@@ -384,25 +430,26 @@ function initChart() {
       animation: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { labels: { color: '#cbd5e1', font: { size: 11 } } }
+        legend: { labels: { color: '#4b5563', font: { size: 11, family: 'sans-serif', weight: '500' }, usePointStyle: true, boxWidth: 6 } }
       },
       scales: {
         x: {
-          ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 8 },
-          grid: { color: '#1e293b' }
+          ticks: { color: '#9ca3af', font: { size: 10 } },
+          grid: { color: '#f3f4f6' },
+          border: { display: false }
         },
         y: {
           position: 'left',
-          title: { display: true, text: 'HR (bpm)', color: '#ef4444', font: { size: 10 } },
-          ticks: { color: '#64748b', font: { size: 10 } },
-          grid: { color: '#1e293b' },
+          ticks: { color: '#ff4d6d', font: { size: 10, weight: '600' } },
+          grid: { color: '#f9fafb' },
+          border: { display: false },
           suggestedMin: 50, suggestedMax: 120
         },
         y1: {
           position: 'right',
-          title: { display: true, text: 'SpO₂ (%)', color: '#3b82f6', font: { size: 10 } },
-          ticks: { color: '#64748b', font: { size: 10 } },
+          ticks: { color: '#3b82f6', font: { size: 10, weight: '600' } },
           grid: { drawOnChartArea: false },
+          border: { display: false },
           suggestedMin: 90, suggestedMax: 100
         }
       }
@@ -422,9 +469,6 @@ function updateChart(d) {
   chart.update('none');
 }
 
-// =====================================================================
-//  HANDLE DATA MASUK
-// =====================================================================
 function handleReading(d) {
   if (!d) return;
   history.push(d);
@@ -435,11 +479,13 @@ function handleReading(d) {
   updateChart(d);
 }
 
-// =====================================================================
-//  WEB BLUETOOTH
-// =====================================================================
 function setConnected(state) {
-  $('statusDot').classList.toggle('on', state);
+  const dot = $('statusDot');
+  if (state) {
+    dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]";
+  } else {
+    dot.className = "w-2.5 h-2.5 rounded-full bg-red-500";
+  }
   $('statusText').textContent = state ? 'Connected' : 'Disconnected';
   $('btnConnect').disabled    = state;
   $('btnDisconnect').disabled = !state;
@@ -447,37 +493,37 @@ function setConnected(state) {
 
 async function connectBLE() {
   if (!navigator.bluetooth) {
-    log('❌ Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge terbaru.', 'err');
-    alert('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge terbaru.');
+    log('Browser tidak mendukung Web Bluetooth. Gunakan Chrome/Edge terbaru.', 'err');
+    alert('Browser tidak mendukung Web Bluetooth.');
     return;
   }
   try {
-    log('🔍 Memindai perangkat BLE...');
+    log('Memindai perangkat BLE...');
     bleDevice = await navigator.bluetooth.requestDevice({
       filters: [{ services: [SERVICE_UUID] }],
       optionalServices: [SERVICE_UUID]
     });
-    log(`📱 Ditemukan: ${bleDevice.name || 'Unknown'}`, 'ok');
+    log(`Ditemukan: ${bleDevice.name || 'Unknown'}`, 'ok');
 
     bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-    log('🔗 Menghubungkan ke GATT server...');
+    log('Menghubungkan ke GATT server...');
     const server = await bleDevice.gatt.connect();
 
-    log('🔎 Mencari service...');
+    log('Mencari service...');
     const service = await server.getPrimaryService(SERVICE_UUID);
 
-    log('🔎 Mencari characteristic...');
+    log('Mencari characteristic...');
     bleChar = await service.getCharacteristic(CHAR_UUID);
 
-    log('🔔 Mengaktifkan notifikasi...');
+    log('Mengaktifkan notifikasi...');
     await bleChar.startNotifications();
     bleChar.addEventListener('characteristicvaluechanged', onDataReceived);
 
     setConnected(true);
-    log('✅ Terhubung! Menunggu data dari ESP32...', 'ok');
+    log('Terhubung! Menunggu data dari ESP32...', 'ok');
   } catch (err) {
-    log(`❌ Gagal connect: ${err.message}`, 'err');
+    log(`Gagal connect: ${err.message}`, 'err');
     setConnected(false);
   }
 }
@@ -489,7 +535,7 @@ function disconnectBLE() {
 }
 
 function onDisconnected() {
-  log('⚠️ Perangkat terputus', 'err');
+  log('Perangkat terputus', 'err');
   setConnected(false);
   bleChar = null;
 }
@@ -497,15 +543,12 @@ function onDisconnected() {
 function onDataReceived(event) {
   const value = event.target.value;
   const text = new TextDecoder().decode(value);
-  log(`📥 RX: ${text}`, 'rx');
+  log(`RX: ${text}`, 'rx');
   const d = parsePacket(text);
   if (d) handleReading(d);
-  else log('⚠️ Format data tidak dikenali', 'err');
+  else log('Format data tidak dikenali', 'err');
 }
 
-// =====================================================================
-//  EXPORT CSV
-// =====================================================================
 function exportCSV() {
   if (history.length === 0) {
     alert('Belum ada data untuk di-export');
@@ -522,32 +565,26 @@ function exportCSV() {
   a.download = `esp32_monitor_${Date.now()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-  log(`💾 Export ${history.length} baris ke CSV`, 'ok');
+  log(`Export ${history.length} baris ke CSV`, 'ok');
 }
 
-// =====================================================================
-//  INIT
-// =====================================================================
 async function init() {
   await openDB();
   initChart();
 
   history = await loadHistory();
   if (history.length > 0) {
-    log(`📚 Memuat ${history.length} sampel dari database lokal`, 'ok');
+    log(`Memuat ${history.length} sampel dari database lokal`, 'ok');
     const last = history[history.length - 1];
     updateUI(last);
-    // Render chart dari riwayat
     history.slice(-MAX_CHART).forEach(d => updateChart(d));
   } else {
-    log('🆕 Database kosong. Siap menerima data baru.');
+    log('Database kosong. Siap menerima data baru.');
   }
   renderHistory();
 
-  $('btnConnect').addEventListener('click', connectBLE);
-  $('btnDisconnect').addEventListener('click', disconnectBLE);
-  $('btnExport').addEventListener('click', exportCSV);
-  $('btnClear').addEventListener('click', async () => {
+  $('btnConnect').addEventListener('click', connectBLE);$('btnDisconnect').addEventListener('click', disconnectBLE);
+  $('btnExport').addEventListener('click', exportCSV);$('btnClear').addEventListener('click', async () => {
     if (confirm('Hapus semua data riwayat?')) {
       clearDB();
       history = [];
@@ -556,11 +593,11 @@ async function init() {
       chart.data.datasets.forEach(ds => ds.data = []);
       chart.update();
       updateUI({ hr: 0, spo2: 0, steps: 0, bat: 0, status: 'CLEARED' });
-      $('sampleCount').textContent = '0 sampel';
+      $('sampleCount').textContent = '0 samples';
     }
   });
 
-  log('🚀 Aplikasi siap. Klik "Connect BLE" untuk memulai.');
+  log('Aplikasi siap. Klik "Connect Device" untuk memulai.');
 }
 
 window.addEventListener('DOMContentLoaded', init);
