@@ -29,7 +29,7 @@
   </div>
 
   <header class="flex justify-between items-center py-3 mb-2">
-    <h1 class="text-3xl font-semibold tracking-tight">Health</h1>
+    <h1 class="text-3xl font-semibold tracking-tight">SRHV1.0</h1>
     <div class="flex items-center gap-2">
       <div class="flex items-center gap-2 bg-white px-4 min-h-[44px] rounded-full shadow-sm text-sm font-medium border border-gray-100">
         <span class="w-3 h-3 rounded-full bg-red-500" id="statusDot"></span>
@@ -96,7 +96,7 @@
         <p class="text-sm text-blue-700 leading-relaxed">Pastikan ESP32-C6 menyala dan menampilkan <span class="font-mono font-bold">BLE: Offline</span> di OLED sebelum menekan Connect.</p>
       </div>
     </div>
-    <div class="px-6 py-3 border-t border-gray-100 text-center"><p class="cap text-gray-400">Wearable Monitor v1.1 | Protokol paket v1</p></div>
+    <div class="px-6 py-3 border-t border-gray-100 text-center"><p class="cap text-gray-400">SRHV1.0</p></div>
   </aside>
 
   <!-- Activity -->
@@ -451,7 +451,7 @@ class MockTransport extends BleTransport {
   get name() { return 'Demo (simulasi)'; }
   async connect(step) {
     ['connecting', 'discovering', 'subscribing'].forEach(step);
-    this.timer = setInterval(() => this._tick(), 1000);
+    this.timer = setInterval(() => this._tick(), 5000);
   }
   reconnect(step) { return this.connect(step); }
   disconnect() { clearInterval(this.timer); this.timer = null; setTimeout(() => this.onDisconnect(), 0); }
@@ -1067,19 +1067,40 @@ function download(name, text, mime) {
 async function exportCSV() {
   const rows = await getAll('readings');
   if (!rows.length) { alert('Belum ada data'); return; }
-  const head = 'timestamp,session_id,seq,uptime_s,hr_bpm,spo2_pct,steps,battery_v,status,crc_verified\n';
-  const body = rows.map(d => [new Date(d.ts).toISOString(), d.sessionId ?? '', d.seq ?? '', d.uptime, d.hr, d.spo2, d.steps, d.bat.toFixed(2), d.status, d.verified ? 1 : 0].join(',')).join('\n');
-  download(`esp32_monitor_${Date.now()}.csv`, head + body, 'text/csv');
-  log(`Export ${rows.length} baris ke CSV`, 'ok');
+  
+  const head = 'timestamp,session_id,seq,uptime_s,hr_bpm,spo2_pct,steps,battery_v,status,crc_verified,ai_level,fatigue_risk\n';
+  
+  const body = rows.map(d => {
+    // Pindahkan aiClassify(d) ke dalam map agar d (data per baris) terbaca
+    const ai = aiClassify(d);
+    
+    return [
+      new Date(d.ts).toISOString(), 
+      d.sessionId ?? '', 
+      d.seq ?? '', 
+      d.uptime, 
+      d.hr, 
+      d.spo2, 
+      d.steps, 
+      d.bat.toFixed(2), 
+      d.status, 
+      d.verified ? 1 : 0,
+      ai.level.name, 
+      ai.fatigueRisk ? 1 : 0
+    ].join(',');
+  }).join('\n');
+  
+  download(`SRHV1.0_${Date.now()}.csv`, head + body, 'text/csv');
+  log(`Export ${rows.length} baris ke CSV dengan ringkasan AI`, 'ok');
 }
+
 async function exportJSON() {
   const [devices, sessions, readings, sosEvents] = await Promise.all([getAll('devices'), getAll('sessions'), getAll('readings'), getAll('sos_events')]);
   if (!readings.length) { alert('Belum ada data'); return; }
   const out = { schema: 'esp32-monitor/3', exportedAt: new Date().toISOString(), devices, sessions, readings, sosEvents };
-  download(`esp32_monitor_${Date.now()}.json`, JSON.stringify(out, null, 2), 'application/json');
+  download(`SRHV1.0_${Date.now()}.json`, JSON.stringify(out, null, 2), 'application/json');
   log(`Export JSON: ${devices.length} perangkat, ${sessions.length} sesi, ${readings.length} bacaan, ${sosEvents.length} kejadian SOS`, 'ok');
 }
-
 // =====================================================================
 //  DRAWER
 // =====================================================================
