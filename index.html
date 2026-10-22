@@ -151,7 +151,6 @@
       </div>
     </div>
 
-    <!-- ⬅ CHANGED: Device Battery -> Device Power (INA219) -->
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
         <div class="flex items-center justify-between text-sm font-semibold text-gray-400 mb-2">
@@ -239,7 +238,6 @@
     <div class="h-[200px] w-full"><canvas id="chart"></canvas></div>
   </div>
 
-  <!-- ⬅ CHANGED: kolom V & I ditambahkan -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
     <h3 class="text-base font-semibold mb-4">Data History (last 10)</h3>
     <div class="table-scroll overflow-x-auto max-h-[280px]">
@@ -278,6 +276,7 @@ const CFG = {
   ALERT_COOLDOWN_MS: 30000, ALERT_SHOW_MS: 8000,
   SOS: { sustainMs: 15000, countdownS: 15, cooldownMs: 60000 },
   THRESH: { hrHigh: 120, hrLow: 45, spo2Warn: 95, spo2Crit: 90, batLow: 3.50, batCrit: 3.35 },
+  TIME_SYNC_INTERVAL_MS: 10 * 60 * 1000,   // <-- re-sync tiap 10 menit
   AI: {
     STEP_SEDENTARY_MAX:  5000,
     STEP_LOW_ACTIVE_MAX: 7500,
@@ -311,9 +310,9 @@ function log(msg, type = '') {
 function haptic(kind) { log(`[status:${kind}] placeholder`); }
 
 // =====================================================================
-//  PROTOKOL PAKET v1 (INA219):
-//  $1,<seq>,<uptime>,<hr>,<spo2>,<steps>,<volt>,<current>,<power>,<status>*<CRC16>\n
-//  CRC-16/CCITT-FALSE atas teks di antara '$' dan '*'
+//  PROTOKOL PAKET v1 + TIME SYNC
+//  Notifikasi  : $1,<seq>,<uptime>,<hr>,<spo2>,<steps>,<volt>,<current>,<power>,<status>*<CRC16>\n
+//  Write sync  : $TIME,<local_epoch_sec>,<tz_offset_minutes>*<CRC16>\n
 // =====================================================================
 function crc16(str) {
   let c = 0xFFFF;
@@ -346,23 +345,18 @@ class PacketParser {
     return out;
   }
 
-  // ⬅ CHANGED: parse 3 field baru (volt, current, power). `bat` = alias untuk volt
-  //   agar kode UI lama tetap kompatibel.
   build(f, ts, seq, verified) {
     const uptime  = num(f[0], 0, 4e9);
     const hr      = num(f[1], 0, 300);
     const spo2    = num(f[2], 0, 100);
     const steps   = num(f[3], 0, 1e6);
-    const volt    = num(f[4], 0, 30);       // V
-    const current = num(f[5], 0, 20000);    // mA (INA219 default ±320mV / 0.1Ω = 3.2A max)
-    const power   = num(f[6], 0, 200000);   // mW
+    const volt    = num(f[4], 0, 30);
+    const current = num(f[5], 0, 20000);
+    const power   = num(f[6], 0, 200000);
     if ([uptime, hr, spo2, steps, volt, current, power].includes(null)) return null;
     return {
       ts, seq, uptime, hr, spo2, steps,
-      bat: volt,               // ⬅ alias backward-compat
-      volt,                    // ⬅ eksplisit
-      current,                 // ⬅ mA
-      power,                   // ⬅ mW
+      bat: volt, volt, current, power,
       status: sanitizeStatus(f.slice(7).join(',')),
       verified
     };
@@ -376,7 +370,6 @@ class PacketParser {
     const f = body.split(',');
     if (parseInt(f[0]) !== 1) { this.stats.bad++; log(`Versi protokol ${f[0]} tidak didukung`, 'err'); return null; }
     const seq = num(f[1], 0, 65535);
-    // ⬅ CHANGED: minimal 10 field (versi + 8 body + status) — naik dari 8
     const p = f.length >= 10 && seq !== null ? this.build(f.slice(2), Date.now(), seq, true) : null;
     if (!p) { this.stats.bad++; log('Isi paket tidak valid', 'err'); return null; }
     if (this.lastSeq !== null) {
@@ -387,12 +380,9 @@ class PacketParser {
     return p;
   }
 
-  // ⬅ CHANGED: legacy (tanpa INA) -> padding current=0, power=0
-  //   Format legacy: uptime,hr,spo2,steps,bat,status
-  //   Format baru  : uptime,hr,spo2,steps,volt,current,power,status
   parseLegacy(text) {
     const parts = text.split(',');
-    if (parts.length === 6) parts.splice(5, 0, '0', '0'); // insert current, power
+    if (parts.length === 6) parts.splice(5, 0, '0', '0');
     const p = this.build(parts, Date.now(), null, false);
     if (!p) { this.stats.bad++; log('Format data tidak dikenali', 'err'); return null; }
     this.stats.legacy++; return p;
@@ -411,7 +401,14 @@ class BleTransport {
 }
 
 class WebBleTransport extends BleTransport {
-  constructor() { super(); this.device = null; this.char = null; this.dec = new TextDecoder(); }
+  constructor() {
+    super();
+    this.device = null;
+    this.char = null;
+    this.dec = new TextDecoder();
+    this.enc = new TextEncoder();
+    this.syncTimer = null;
+  }
   get supported() { return !!navigator.bluetooth; }
   get id() { return this.device ? this.device.id : 'unknown'; }
   get name() { return this.device ? (this.device.name || 'Unknown') : null; }
@@ -439,19 +436,50 @@ class WebBleTransport extends BleTransport {
     step('discovering');
     const svc = await server.getPrimaryService(CFG.SERVICE_UUID);
     this.char = await svc.getCharacteristic(CFG.CHAR_UUID);
-    // MTU lebih besar membantu paket >20 byte (INA219 payload ~55 char)
     try {
       const mtu = await this.device.gatt.requestMtu?.(185);
       if (mtu) log(`MTU=${mtu}`);
     } catch (e) { /* ignore */ }
     step('subscribing');
     await this.char.startNotifications();
-    this.char.addEventListener('characteristicvaluechanged', e => this.onData(this.dec.decode(e.target.value)));
+    this.char.addEventListener('characteristicvaluechanged',
+      e => this.onData(this.dec.decode(e.target.value)));
+
+    // === Sinkronisasi waktu ke ESP32 ===
+    await this._sendTimeSync();
+    if (this.syncTimer) clearInterval(this.syncTimer);
+    this.syncTimer = setInterval(() => this._sendTimeSync(), CFG.TIME_SYNC_INTERVAL_MS);
   }
-  disconnect() { if (this.device && this.device.gatt.connected) this.device.gatt.disconnect(); }
+
+  async _sendTimeSync() {
+    if (!this.char) return;
+    try {
+      const tzOff      = -new Date().getTimezoneOffset();           // menit timur UTC
+      const localEpoch = Math.floor(Date.now() / 1000) + tzOff * 60;
+      const body = `TIME,${localEpoch},${tzOff}`;
+      const pkt  = `$${body}*${hex4(crc16(body))}\n`;
+      const bytes = this.enc.encode(pkt);
+
+      try {
+        await this.char.writeValue(bytes);
+      } catch (err) {
+        if (this.char.writeValueWithoutResponse) {
+          await this.char.writeValueWithoutResponse(bytes);
+        } else throw err;
+      }
+      const tzH = tzOff / 60;
+      log(`Time sync → ESP32  ${new Date().toLocaleTimeString('id-ID')} (UTC${tzH>=0?'+':''}${tzH.toFixed(1)})`, 'ok');
+    } catch (e) {
+      log(`Time sync gagal: ${e.message}`, 'err');
+    }
+  }
+
+  disconnect() {
+    if (this.syncTimer) { clearInterval(this.syncTimer); this.syncTimer = null; }
+    if (this.device && this.device.gatt.connected) this.device.gatt.disconnect();
+  }
 }
 
-// ⬅ CHANGED: MockTransport sekarang juga menghasilkan current & power INA219
 class MockTransport extends BleTransport {
   constructor() {
     super();
@@ -476,8 +504,6 @@ class MockTransport extends BleTransport {
     let spo2 = r > 0.97 ? 88 : Math.round(96 + Math.random() * 3);
     if (this.anomaly) { hr = 138; spo2 = 86; }
 
-    // INA219 simulasi: ~30 mA baseline, sinusoidal ±15 mA (menandakan siklus kerja),
-    // + noise ±5 mA. Power = V × I (mW).
     const current = Math.max(5,
       30 + Math.sin(this.up / 3) * 15 + (Math.random() - 0.5) * 10
     );
@@ -487,11 +513,9 @@ class MockTransport extends BleTransport {
     const seq = this.seq;
     this.seq = (this.seq + (Math.random() < 0.05 ? 2 : 1)) & 0xFFFF;
 
-    // ⬅ CHANGED: 8 field body + status (volt, current, power)
     const body = `1,${seq},${this.up},${hr},${spo2},${this.steps},${volt.toFixed(2)},${current.toFixed(1)},${power.toFixed(1)},NORMAL_BLE`;
     let pkt = `$${body}*${hex4(crc16(body))}\n`;
     if (Math.random() < 0.06) pkt = pkt.slice(0, 4) + 'X' + pkt.slice(5);
-    // Dipecah untuk uji buffering parser
     this.onData(pkt.slice(0, 20));
     this.onData(pkt.slice(20));
   }
@@ -683,7 +707,7 @@ function buildSosEvent(outcome) {
   return { type: 'sos', source: sos.source, reason: sos.reason, outcome, ts: Date.now(),
     sessionId: session && session.id !== undefined ? session.id : null, deviceId: transport ? transport.id : null,
     vitals: { hr: d.hr ?? null, spo2: d.spo2 ?? null, steps: d.steps ?? null, bat: d.bat ?? null, status: d.status ?? null,
-              current: d.current ?? null, power: d.power ?? null },  // ⬅ CHANGED
+              current: d.current ?? null, power: d.power ?? null },
     location: null };
 }
 function recordSos(ev) {
@@ -886,7 +910,6 @@ function getStatusClass(s) {
   return 'bg-blue-50 text-blue-600 border border-blue-100' + base;
 }
 
-// ⬅ CHANGED: render V / I / P
 function updateUI(d) {
   lastDataTime = d.ts;
   $('overviewHr').textContent = d.hr > 0 ? d.hr : '--';
@@ -908,7 +931,6 @@ function updateUI(d) {
   else if (d.spo2 > 0) { txt = 'Rendah!'; cls = 'text-red-500 font-semibold'; }
   h.textContent = txt; h.className = `text-right cap mb-1 ${cls}`;
 
-  // ⬅ CHANGED: INA219 V/I/P
   const volt = (d.volt != null ? d.volt : d.bat) || 0;
   $('valBat').textContent = volt ? volt.toFixed(2) : '--';
   $('valCurrent').textContent = d.current != null ? d.current.toFixed(1) : '--';
@@ -930,7 +952,6 @@ function updateLastActive() {
 }
 setInterval(() => { updateLastActive(); renderSession(); renderSos(); }, 1000);
 
-// ⬅ CHANGED: history table columns V & I
 function td(text, cls) { const c = document.createElement('td'); c.className = cls; c.textContent = text; return c; }
 function renderHistory() {
   const tb = $('historyBody'); tb.replaceChildren();
@@ -938,7 +959,7 @@ function renderHistory() {
   if (!recent.length) {
     const tr = document.createElement('tr');
     const c = td('No data available. Connect device to start.', 'text-center py-6 text-gray-400 italic');
-    c.colSpan = 7;  // ⬅ CHANGED (6 -> 7)
+    c.colSpan = 7;
     tr.append(c); tb.append(tr); return;
   }
   recent.forEach(d => {
@@ -1025,7 +1046,6 @@ function download(name, text, mime) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// ⬅ CHANGED: kolom CSV volt / current / power
 async function exportCSV() {
   const rows = await getAll('readings');
   if (!rows.length) { alert('Belum ada data'); return; }
