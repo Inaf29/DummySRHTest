@@ -23,7 +23,6 @@
 
 <div class="max-w-md mx-auto sm:max-w-2xl md:max-w-3xl">
 
-  <!-- Pull-to-refresh indicator -->
   <div id="ptr" class="overflow-hidden h-0 flex items-end justify-center text-gray-500 text-sm">
     <span id="ptrText" class="pb-2">Tarik untuk menyegarkan</span>
   </div>
@@ -44,7 +43,6 @@
   <p id="ptrHint" class="hidden cap text-center text-gray-400 mb-3">Tarik layar ke bawah untuk menyegarkan data</p>
   <div id="alertBox" role="alert" aria-live="assertive" class="hidden mb-4 rounded-2xl px-4 py-3 text-base font-semibold"></div>
 
-  <!-- Drawer -->
   <div id="drawerOverlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none z-40"></div>
   <aside id="drawer" class="fixed top-0 right-0 h-full w-80 max-w-[88vw] bg-white shadow-2xl z-50 translate-x-full flex flex-col">
     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -99,7 +97,6 @@
     <div class="px-6 py-3 border-t border-gray-100 text-center"><p class="cap text-gray-400">SRHV1.0</p></div>
   </aside>
 
-  <!-- Activity -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm mb-4 border border-gray-50">
     <div class="flex justify-center mb-6">
       <div class="relative w-44 h-44 flex items-center justify-center">
@@ -133,7 +130,6 @@
     </div>
   </div>
 
-  <!-- Grid -->
   <div class="grid grid-cols-2 gap-4 mb-6">
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
@@ -155,12 +151,21 @@
       </div>
     </div>
 
+    <!-- ⬅ CHANGED: Device Battery -> Device Power (INA219) -->
     <div class="bg-white rounded-[28px] p-5 shadow-sm border border-gray-50 flex flex-col justify-between min-h-[190px]">
       <div>
-        <div class="text-sm font-semibold text-gray-400 mb-2">Device Battery</div>
-        <div class="text-3xl font-bold tracking-tight"><span id="valBat">--</span> <span class="cap font-normal text-gray-400">V</span></div>
+        <div class="flex items-center justify-between text-sm font-semibold text-gray-400 mb-2">
+          <span>Device Power</span>
+          <span class="cap text-gray-300 font-mono">INA219</span>
+        </div>
+        <div class="text-3xl font-bold tracking-tight">
+          <span id="valBat">--</span> <span class="cap font-normal text-gray-400">V</span>
+        </div>
+        <div class="cap text-gray-500 mt-1 font-mono">
+          <span id="valCurrent">--</span> mA · <span id="valPower">--</span> mW
+        </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 mt-3">
         <div class="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden border border-gray-200"><div id="batBar" class="bar-fill h-full bg-amber-400 rounded-full" style="width:0%"></div></div>
         <span class="cap font-semibold text-gray-500" id="batPct">--%</span>
       </div>
@@ -175,17 +180,12 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- AI RINGKASAN (BARU) -->
-  <!-- ============================================================ -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-base font-semibold">Ringkasan AI</h3>
       <span id="aiBadge" class="text-xs font-bold px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-600 border-emerald-100">Siaga</span>
     </div>
-
     <div class="space-y-4">
-      <!-- Tingkat Aktivitas -->
       <div>
         <div class="flex justify-between items-baseline mb-1.5">
           <span class="cap uppercase font-semibold text-gray-400 tracking-wider">Tingkat Aktivitas</span>
@@ -196,24 +196,18 @@
           <div id="aiActivityBar" class="bar-fill h-full bg-gray-300 rounded-full" style="width:0%"></div>
         </div>
       </div>
-
-      <!-- Status Fisik -->
       <div class="border-t border-gray-100 pt-4">
         <div class="cap uppercase font-semibold text-gray-400 tracking-wider mb-1">Status Fisik</div>
         <div class="text-base font-semibold text-gray-800" id="aiFatigue">Menunggu data</div>
         <p class="text-xs text-gray-400 mt-1" id="aiFatigueDetail">Ambang HR ≥ 164 bpm atau SpO₂ &lt; 95%</p>
       </div>
-
-      <!-- Saran -->
       <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
         <div class="cap uppercase font-semibold text-gray-400 tracking-wider mb-1.5">Saran</div>
         <p id="aiAdvice" class="text-sm text-gray-700 leading-relaxed">Menunggu data dari perangkat.</p>
       </div>
     </div>
   </div>
-  <!-- ============================================================ -->
 
-  <!-- SOS -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
     <div class="flex justify-between items-center mb-3">
       <h3 class="text-base font-semibold">SOS (Demo)</h3>
@@ -237,7 +231,6 @@
     <p class="cap mt-4 opacity-80">Mode demo: tidak ada pesan nyata yang dikirim.</p>
   </div>
 
-  <!-- Chart -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-base font-semibold">Real-time Vitals</h3>
@@ -246,21 +239,25 @@
     <div class="h-[200px] w-full"><canvas id="chart"></canvas></div>
   </div>
 
-  <!-- History -->
+  <!-- ⬅ CHANGED: kolom V & I ditambahkan -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-4">
     <h3 class="text-base font-semibold mb-4">Data History (last 10)</h3>
     <div class="table-scroll overflow-x-auto max-h-[280px]">
       <table class="min-w-full divide-y divide-gray-100 text-sm text-left">
         <thead><tr class="text-gray-400 font-medium uppercase tracking-wider cap">
-          <th class="pb-3 pr-3">Time</th><th class="pb-3 px-2 text-center">HR</th><th class="pb-3 px-2 text-center">SpO₂</th>
-          <th class="pb-3 px-2 text-center">Steps</th><th class="pb-3 px-2 text-right">Battery</th><th class="pb-3 pl-2 text-right">Status</th>
+          <th class="pb-3 pr-3">Time</th>
+          <th class="pb-3 px-2 text-center">HR</th>
+          <th class="pb-3 px-2 text-center">SpO₂</th>
+          <th class="pb-3 px-2 text-center">Steps</th>
+          <th class="pb-3 px-2 text-center">V</th>
+          <th class="pb-3 px-2 text-center">I</th>
+          <th class="pb-3 pl-2 text-right">Status</th>
         </tr></thead>
         <tbody id="historyBody" class="divide-y divide-gray-100 font-medium text-gray-700"></tbody>
       </table>
     </div>
   </div>
 
-  <!-- Log -->
   <div class="bg-white rounded-[28px] p-6 shadow-sm border border-gray-50 mb-10">
     <h3 class="text-base font-semibold mb-3">System Log</h3>
     <div id="log" class="bg-gray-50 border border-gray-100/50 p-4 rounded-2xl h-[160px] overflow-y-auto text-sm font-mono leading-relaxed text-gray-600"></div>
@@ -279,11 +276,8 @@ const CFG = {
   BAT_MIN_V: 3.30, BAT_MAX_V: 4.20, KCAL_PER_STEP: 0.04,
   RECONNECT_MAX: 5, RECONNECT_BASE_MS: 1000,
   ALERT_COOLDOWN_MS: 30000, ALERT_SHOW_MS: 8000,
-  // SOS: anomali harus bertahan sustainMs, lalu hitung mundur countdownS sebelum dikirim
   SOS: { sustainMs: 15000, countdownS: 15, cooldownMs: 60000 },
-  // Ambang batas indikatif, bukan acuan medis. Sesuaikan dengan kebutuhan.
   THRESH: { hrHigh: 120, hrLow: 45, spo2Warn: 95, spo2Crit: 90, batLow: 3.50, batCrit: 3.35 },
-  // === Klasifikasi AI (mengikuti Config di kode C ESP32) ===
   AI: {
     STEP_SEDENTARY_MAX:  5000,
     STEP_LOW_ACTIVE_MAX: 7500,
@@ -293,9 +287,8 @@ const CFG = {
     SPO2_LOW:            95
   }
 };
-// MAX_HR & HR_FATIGUE_THRESHOLD dihitung sama seperti kode C
-CFG.AI.MAX_HR = 208 - (0.7 * CFG.AI.USER_AGE);          // 194
-CFG.AI.HR_FATIGUE = 0.85 * CFG.AI.MAX_HR;                // 164.9
+CFG.AI.MAX_HR = 208 - (0.7 * CFG.AI.USER_AGE);
+CFG.AI.HR_FATIGUE = 0.85 * CFG.AI.MAX_HR;
 
 const $ = id => document.getElementById(id);
 const fmtTime = ts => new Date(ts).toLocaleTimeString('id-ID', { hour12: false });
@@ -303,9 +296,6 @@ const fmtDur = ms => { const s = Math.floor(ms / 1000); return [s / 3600, s / 60
 
 let history = [], chart, heartMini, lastDataTime = null, drawerOpen = false;
 
-// =====================================================================
-//  LOG (tanpa innerHTML)
-// =====================================================================
 const logBox = $('log');
 function log(msg, type = '') {
   const row = document.createElement('div');
@@ -318,12 +308,11 @@ function log(msg, type = '') {
   logBox.prepend(row);
   while (logBox.childElementCount > 200) logBox.lastChild.remove();
 }
-
-// Placeholder haptic: hanya log. Di React Native ganti dengan Haptics.impactAsync / notificationAsync.
 function haptic(kind) { log(`[status:${kind}] placeholder`); }
 
 // =====================================================================
-//  PROTOKOL PAKET v1:  $1,<seq>,<uptime>,<hr>,<spo2>,<steps>,<bat>,<status>*<CRC16>\n
+//  PROTOKOL PAKET v1 (INA219):
+//  $1,<seq>,<uptime>,<hr>,<spo2>,<steps>,<volt>,<current>,<power>,<status>*<CRC16>\n
 //  CRC-16/CCITT-FALSE atas teks di antara '$' dan '*'
 // =====================================================================
 function crc16(str) {
@@ -345,7 +334,6 @@ class PacketParser {
 
   feed(chunk) {
     if (!chunk) return [];
-    // Format lama (tanpa '$' dan tanpa newline): satu notifikasi = satu paket
     if (!this.buf && chunk[0] !== '$') { const p = this.parseLegacy(chunk.trim()); return p ? [p] : []; }
     this.buf += chunk;
     const out = []; let i;
@@ -358,11 +346,26 @@ class PacketParser {
     return out;
   }
 
+  // ⬅ CHANGED: parse 3 field baru (volt, current, power). `bat` = alias untuk volt
+  //   agar kode UI lama tetap kompatibel.
   build(f, ts, seq, verified) {
-    const uptime = num(f[0], 0, 4e9), hr = num(f[1], 0, 300), spo2 = num(f[2], 0, 100),
-          steps = num(f[3], 0, 1e6), bat = num(f[4], 0, 6);
-    if ([uptime, hr, spo2, steps, bat].includes(null)) return null;
-    return { ts, seq, uptime, hr, spo2, steps, bat, status: sanitizeStatus(f.slice(5).join(',')), verified };
+    const uptime  = num(f[0], 0, 4e9);
+    const hr      = num(f[1], 0, 300);
+    const spo2    = num(f[2], 0, 100);
+    const steps   = num(f[3], 0, 1e6);
+    const volt    = num(f[4], 0, 30);       // V
+    const current = num(f[5], 0, 20000);    // mA (INA219 default ±320mV / 0.1Ω = 3.2A max)
+    const power   = num(f[6], 0, 200000);   // mW
+    if ([uptime, hr, spo2, steps, volt, current, power].includes(null)) return null;
+    return {
+      ts, seq, uptime, hr, spo2, steps,
+      bat: volt,               // ⬅ alias backward-compat
+      volt,                    // ⬅ eksplisit
+      current,                 // ⬅ mA
+      power,                   // ⬅ mW
+      status: sanitizeStatus(f.slice(7).join(',')),
+      verified
+    };
   }
 
   parseLine(line) {
@@ -373,7 +376,8 @@ class PacketParser {
     const f = body.split(',');
     if (parseInt(f[0]) !== 1) { this.stats.bad++; log(`Versi protokol ${f[0]} tidak didukung`, 'err'); return null; }
     const seq = num(f[1], 0, 65535);
-    const p = f.length >= 8 && seq !== null ? this.build(f.slice(2), Date.now(), seq, true) : null;
+    // ⬅ CHANGED: minimal 10 field (versi + 8 body + status) — naik dari 8
+    const p = f.length >= 10 && seq !== null ? this.build(f.slice(2), Date.now(), seq, true) : null;
     if (!p) { this.stats.bad++; log('Isi paket tidak valid', 'err'); return null; }
     if (this.lastSeq !== null) {
       const gap = (seq - this.lastSeq - 1 + 65536) % 65536;
@@ -383,20 +387,19 @@ class PacketParser {
     return p;
   }
 
+  // ⬅ CHANGED: legacy (tanpa INA) -> padding current=0, power=0
+  //   Format legacy: uptime,hr,spo2,steps,bat,status
+  //   Format baru  : uptime,hr,spo2,steps,volt,current,power,status
   parseLegacy(text) {
-    const p = this.build(text.split(','), Date.now(), null, false);
+    const parts = text.split(',');
+    if (parts.length === 6) parts.splice(5, 0, '0', '0'); // insert current, power
+    const p = this.build(parts, Date.now(), null, false);
     if (!p) { this.stats.bad++; log('Format data tidak dikenali', 'err'); return null; }
     this.stats.legacy++; return p;
   }
 }
 const parser = new PacketParser();
 
-// =====================================================================
-//  LAYER ABSTRAKSI BLE
-//  Kontrak: connect(step), reconnect(step), disconnect(), id, name, supported
-//  Callback: onData(text), onDisconnect(), onRssi(dbm)
-//  Di React Native cukup buat RnBleTransport (react-native-ble-plx) dengan kontrak sama.
-// =====================================================================
 class BleTransport {
   constructor() { this.onData = this.onDisconnect = this.onRssi = () => {}; }
   get supported() { return false; }
@@ -420,7 +423,6 @@ class WebBleTransport extends BleTransport {
     });
     log(`Ditemukan: ${this.name}`, 'ok');
     this.device.addEventListener('gattserverdisconnected', () => this.onDisconnect());
-    // RSSI: hanya via advertisement (eksperimental), umumnya tidak ada saat sudah terhubung
     if (this.device.watchAdvertisements) {
       this.device.addEventListener('advertisementreceived', e => this.onRssi(e.rssi));
       this.device.watchAdvertisements().catch(() => {});
@@ -437,6 +439,11 @@ class WebBleTransport extends BleTransport {
     step('discovering');
     const svc = await server.getPrimaryService(CFG.SERVICE_UUID);
     this.char = await svc.getCharacteristic(CFG.CHAR_UUID);
+    // MTU lebih besar membantu paket >20 byte (INA219 payload ~55 char)
+    try {
+      const mtu = await this.device.gatt.requestMtu?.(185);
+      if (mtu) log(`MTU=${mtu}`);
+    } catch (e) { /* ignore */ }
     step('subscribing');
     await this.char.startNotifications();
     this.char.addEventListener('characteristicvaluechanged', e => this.onData(this.dec.decode(e.target.value)));
@@ -444,8 +451,13 @@ class WebBleTransport extends BleTransport {
   disconnect() { if (this.device && this.device.gatt.connected) this.device.gatt.disconnect(); }
 }
 
+// ⬅ CHANGED: MockTransport sekarang juga menghasilkan current & power INA219
 class MockTransport extends BleTransport {
-  constructor() { super(); this.timer = null; this.seq = 0; this.up = 0; this.steps = 0; this.bat = 3.95; this.anomaly = false; }
+  constructor() {
+    super();
+    this.timer = null; this.seq = 0; this.up = 0; this.steps = 0; this.bat = 3.95;
+    this.anomaly = false;
+  }
   get supported() { return true; }
   get id() { return 'demo'; }
   get name() { return 'Demo (simulasi)'; }
@@ -456,22 +468,35 @@ class MockTransport extends BleTransport {
   reconnect(step) { return this.connect(step); }
   disconnect() { clearInterval(this.timer); this.timer = null; setTimeout(() => this.onDisconnect(), 0); }
   _tick() {
-    this.up++; this.steps += Math.random() < 0.6 ? 2 : 0; this.bat = Math.max(3.3, this.bat - 0.0002);
+    this.up++;
+    this.steps += Math.random() < 0.6 ? 2 : 0;
+    this.bat = Math.max(3.3, this.bat - 0.0002);
     const r = Math.random();
-    let hr = r < 0.04 ? 132 : Math.round(68 + Math.random() * 22);
+    let hr   = r < 0.04 ? 132 : Math.round(68 + Math.random() * 22);
     let spo2 = r > 0.97 ? 88 : Math.round(96 + Math.random() * 3);
-    if (this.anomaly) { hr = 138; spo2 = 86; } // anomali berkelanjutan untuk demo SOS
-    const seq = this.seq; this.seq = (this.seq + (Math.random() < 0.05 ? 2 : 1)) & 0xFFFF;
-    const body = `1,${seq},${this.up},${hr},${spo2},${this.steps},${this.bat.toFixed(2)},NORMAL_BLE`;
+    if (this.anomaly) { hr = 138; spo2 = 86; }
+
+    // INA219 simulasi: ~30 mA baseline, sinusoidal ±15 mA (menandakan siklus kerja),
+    // + noise ±5 mA. Power = V × I (mW).
+    const current = Math.max(5,
+      30 + Math.sin(this.up / 3) * 15 + (Math.random() - 0.5) * 10
+    );
+    const power = this.bat * current;
+    const volt = this.bat;
+
+    const seq = this.seq;
+    this.seq = (this.seq + (Math.random() < 0.05 ? 2 : 1)) & 0xFFFF;
+
+    // ⬅ CHANGED: 8 field body + status (volt, current, power)
+    const body = `1,${seq},${this.up},${hr},${spo2},${this.steps},${volt.toFixed(2)},${current.toFixed(1)},${power.toFixed(1)},NORMAL_BLE`;
     let pkt = `$${body}*${hex4(crc16(body))}\n`;
     if (Math.random() < 0.06) pkt = pkt.slice(0, 4) + 'X' + pkt.slice(5);
-    this.onData(pkt.slice(0, 20)); this.onData(pkt.slice(20)); // dipecah untuk uji buffering
+    // Dipecah untuk uji buffering parser
+    this.onData(pkt.slice(0, 20));
+    this.onData(pkt.slice(20));
   }
 }
 
-// =====================================================================
-//  STATE MACHINE
-// =====================================================================
 const TRANSITIONS = {
   IDLE: ['SCANNING'],
   SCANNING: ['CONNECTING', 'IDLE'],
@@ -509,9 +534,6 @@ function renderState(s) {
   updateSosControls();
 }
 
-// =====================================================================
-//  DATABASE RELASIONAL (IndexedDB v2): devices 1-N sessions 1-N readings
-// =====================================================================
 let db = null;
 const idbReq = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 const store = (n, m = 'readonly') => db.transaction(n, m).objectStore(n);
@@ -551,9 +573,6 @@ async function clearDB() {
   log('Database lokal dibersihkan', 'ok');
 }
 
-// =====================================================================
-//  SESSION TRACKING
-// =====================================================================
 let session = null;
 async function beginSession() {
   parser.resetStats();
@@ -582,9 +601,6 @@ function renderSession() {
   el.textContent = `Sesi #${session.id ?? '-'} (${fmtDur(Date.now() - session.start)})\nSampel ${session.samples} | Hilang ${s.lost}\nCRC rusak ${s.bad} | Tanpa CRC ${s.legacy}`;
 }
 
-// =====================================================================
-//  ALERT / THRESHOLD
-// =====================================================================
 const alertLast = {};
 let alertTimer = null;
 function evaluateAlerts(d) {
@@ -619,10 +635,6 @@ function showAlert(level, msg) {
   alertTimer = setTimeout(() => box.classList.add('hidden'), CFG.ALERT_SHOW_MS);
 }
 
-// =====================================================================
-//  SOS (DEMO): deteksi anomali berkelanjutan -> hitung mundur -> dispatcher
-//  Dispatcher masih stub. Di mobile app ganti dengan SMS/WhatsApp/push + GPS.
-// =====================================================================
 class SosDispatcher { async send(ev) { throw new Error('Belum diimplementasikan'); } }
 class StubSosDispatcher extends SosDispatcher {
   async send(ev) { log(`[SOS STUB] payload: ${JSON.stringify(ev)}`, 'err'); return { ok: true, simulated: true }; }
@@ -631,7 +643,6 @@ const dispatcher = new StubSosDispatcher();
 const sos = { state: 'ARMED', since: null, reason: '', source: 'auto', left: 0, timer: null, cooldownUntil: 0, last: null };
 const SOS_LABEL = { sent: 'terkirim', cancelled: 'dibatalkan', failed: 'gagal' };
 
-// Data tidak valid (jari tidak terdeteksi, HR dan SpO2 nol) tidak dihitung sebagai anomali
 function anomalyReason(d) {
   const T = CFG.THRESH;
   if (d.status === 'JARI_TIDAK_TERDETEKSI' || d.status === 'TEMPELKAN_JARI' || (d.hr === 0 && d.spo2 === 0)) return null;
@@ -640,7 +651,6 @@ function anomalyReason(d) {
   if (d.hr > 0 && d.hr <= T.hrLow) return `HR rendah ${d.hr} bpm`;
   return null;
 }
-
 function sosFeed(d) {
   if (sos.state !== 'ARMED') return;
   if (Date.now() < sos.cooldownUntil) { sos.since = null; renderSos(); return; }
@@ -650,7 +660,6 @@ function sosFeed(d) {
   sos.reason = r;
   if (d.ts - sos.since >= CFG.SOS.sustainMs) startCountdown(r, 'auto'); else renderSos();
 }
-
 function startCountdown(reason, source) {
   if (sos.state === 'COUNTDOWN') return;
   Object.assign(sos, { state: 'COUNTDOWN', reason, source, left: CFG.SOS.countdownS });
@@ -664,26 +673,23 @@ function startCountdown(reason, source) {
   }, 1000);
   renderSos();
 }
-
 function endCountdown() {
   clearInterval(sos.timer); sos.timer = null;
   $('sosOverlay').classList.add('hidden');
   sos.state = 'ARMED'; sos.since = null; sos.cooldownUntil = Date.now() + CFG.SOS.cooldownMs;
 }
-
 function buildSosEvent(outcome) {
   const d = history[history.length - 1] || {};
   return { type: 'sos', source: sos.source, reason: sos.reason, outcome, ts: Date.now(),
     sessionId: session && session.id !== undefined ? session.id : null, deviceId: transport ? transport.id : null,
-    vitals: { hr: d.hr ?? null, spo2: d.spo2 ?? null, steps: d.steps ?? null, bat: d.bat ?? null, status: d.status ?? null },
-    location: null /* diisi GPS di mobile app */ };
+    vitals: { hr: d.hr ?? null, spo2: d.spo2 ?? null, steps: d.steps ?? null, bat: d.bat ?? null, status: d.status ?? null,
+              current: d.current ?? null, power: d.power ?? null },  // ⬅ CHANGED
+    location: null };
 }
-
 function recordSos(ev) {
   sos.last = { outcome: ev.outcome, ts: ev.ts };
   try { store('sos_events', 'readwrite').add(ev); } catch (e) { log(`DB SOS: ${e.message}`, 'err'); }
 }
-
 async function dispatchSos() {
   if (sos.state !== 'COUNTDOWN') return;
   const ev = buildSosEvent('sent');
@@ -692,14 +698,12 @@ async function dispatchSos() {
   catch (e) { ev.outcome = 'failed'; log(`SOS gagal dikirim: ${e.message}`, 'err'); }
   recordSos(ev); renderSos();
 }
-
 function cancelSos() {
   if (sos.state !== 'COUNTDOWN') return;
   const ev = buildSosEvent('cancelled');
   endCountdown(); haptic('success'); log('SOS dibatalkan oleh pengguna', 'ok');
   recordSos(ev); renderSos();
 }
-
 function renderSos() {
   const BADGE = { ok: 'bg-emerald-50 text-emerald-600 border-emerald-100', warn: 'bg-amber-50 text-amber-600 border-amber-100',
     crit: 'bg-red-50 text-red-600 border-red-100', idle: 'bg-gray-50 text-gray-500 border-gray-200' };
@@ -716,7 +720,6 @@ function renderSos() {
   $('sosBadge').textContent = badge; $('sosBadge').className = `text-xs font-bold px-2.5 py-1 rounded-full border ${cls}`;
   $('sosText').textContent = txt; $('sosBar').style.width = `${pct}%`;
 }
-
 function updateSosControls() {
   const demo = transport instanceof MockTransport && sm.state === 'CONNECTED';
   const b = $('btnSosAnomaly');
@@ -724,11 +727,6 @@ function updateSosControls() {
   b.textContent = `Simulasi Anomali: ${demo && transport.anomaly ? 'Nyala' : 'Mati'}`;
 }
 
-// =====================================================================
-//  AI RINGKASAN — mengikuti logika classifySensorData() di kode C ESP32
-//  Klasifikasi tingkat aktivitas dari step + deteksi risiko kelelahan dari HR/SpO2
-//  Ditambah saran tindakan berdasarkan kombinasi keduanya.
-// =====================================================================
 const AI_LEVELS = [
   { max: CFG.AI.STEP_SEDENTARY_MAX,  name: 'Sedentary',       barColor: 'bg-gray-400'   },
   { max: CFG.AI.STEP_LOW_ACTIVE_MAX, name: 'Low Active',      barColor: 'bg-amber-400'  },
@@ -736,21 +734,13 @@ const AI_LEVELS = [
   { max: CFG.AI.STEP_ACTIVE_MAX,     name: 'Active',          barColor: 'bg-emerald-400'},
   { max: Infinity,                   name: 'High Active',     barColor: 'bg-emerald-500'}
 ];
-
-// Terapkan CFG.AI.USER_AGE dan hitung HR_FATIGUE_THRESHOLD (sama seperti kode C)
 CFG.AI.MAX_HR = 208 - (0.7 * CFG.AI.USER_AGE);
 CFG.AI.HR_FATIGUE = 0.85 * CFG.AI.MAX_HR;
 
 function aiClassify(d) {
-  // Klasifikasi tingkat aktivitas berdasarkan jumlah langkah
   let level = AI_LEVELS[0];
   for (const l of AI_LEVELS) { if (d.steps < l.max) { level = l; break; } }
-
-  // Progress bar: 0–100% dari target High Active (12.500 langkah)
   const progress = Math.max(0, Math.min(1, d.steps / CFG.AI.STEP_ACTIVE_MAX));
-
-  // Deteksi risiko kelelahan (persis seperti kode C)
-  // HR_FATIGUE = 0.85 * MAX_HR, SPO2_LOW = 95
   let fatigueRisk = false;
   if (d.hr > 0 || d.spo2 > 0) {
     fatigueRisk = (d.hr > 0 && d.hr >= CFG.AI.HR_FATIGUE) ||
@@ -758,7 +748,6 @@ function aiClassify(d) {
   }
   return { level, progress, fatigueRisk };
 }
-
 function aiAdvice(level, fatigueRisk, d) {
   if (fatigueRisk) {
     const reason = (d.hr > 0 && d.hr >= CFG.AI.HR_FATIGUE)
@@ -767,26 +756,18 @@ function aiAdvice(level, fatigueRisk, d) {
     return `${reason} Segera hentikan aktivitas berat, duduk dan tarik napas dalam, minum air, lalu ukur ulang dalam 5 menit. Jika tidak membaik, hubungi bantuan medis.`;
   }
   switch (level.name) {
-    case 'Sedentary':
-      return 'Aktivitas harian masih rendah. Coba berjalan ringan 10 menit setiap 2 jam untuk menjaga sirkulasi dan metabolisme.';
-    case 'Low Active':
-      return 'Sudah mulai bergerak. Pertahankan konsistensi dan tambah durasi aktivitas secara bertahap (misal +5 menit/hari).';
-    case 'Somewhat Active':
-      return 'Tingkat aktivitas sedang dan tergolong sehat. Jaga ritme ini, kombinasikan dengan latihan kekuatan 2× per minggu.';
-    case 'Active':
-      return 'Aktivitas tinggi dan baik untuk kesehatan jantung. Pastikan hidrasi cukup dan tidur 7–8 jam untuk pemulihan.';
-    case 'High Active':
-      return 'Sangat aktif. Jaga keseimbangan dengan istirahat, nutrisi cukup, dan stretching untuk mencegah cedera.';
+    case 'Sedentary':      return 'Aktivitas harian masih rendah. Coba berjalan ringan 10 menit setiap 2 jam untuk menjaga sirkulasi dan metabolisme.';
+    case 'Low Active':     return 'Sudah mulai bergerak. Pertahankan konsistensi dan tambah durasi aktivitas secara bertahap (misal +5 menit/hari).';
+    case 'Somewhat Active':return 'Tingkat aktivitas sedang dan tergolong sehat. Jaga ritme ini, kombinasikan dengan latihan kekuatan 2× per minggu.';
+    case 'Active':         return 'Aktivitas tinggi dan baik untuk kesehatan jantung. Pastikan hidrasi cukup dan tidur 7–8 jam untuk pemulihan.';
+    case 'High Active':    return 'Sangat aktif. Jaga keseimbangan dengan istirahat, nutrisi cukup, dan stretching untuk mencegah cedera.';
   }
   return 'Lanjutkan pemantauan rutin.';
 }
-
 function updateAI(d) {
-  // Nilai default bila belum ada data valid
   const hasHr = d.hr > 0;
   const hasSpo2 = d.spo2 > 0;
   const hasData = d.steps > 0 || hasHr || hasSpo2;
-
   if (!hasData) {
     $('aiBadge').textContent = 'Siaga';
     $('aiBadge').className = 'text-xs font-bold px-2.5 py-1 rounded-full border bg-gray-50 text-gray-500 border-gray-200';
@@ -800,10 +781,7 @@ function updateAI(d) {
     $('aiAdvice').textContent = 'Menunggu data dari perangkat.';
     return;
   }
-
   const { level, progress, fatigueRisk } = aiClassify(d);
-
-  // Badge status: Perhatian / Kurang Gerak / Aman
   if (fatigueRisk) {
     $('aiBadge').textContent = 'Perhatian';
     $('aiBadge').className = 'text-xs font-bold px-2.5 py-1 rounded-full border bg-red-50 text-red-600 border-red-100';
@@ -814,14 +792,10 @@ function updateAI(d) {
     $('aiBadge').textContent = 'Aman';
     $('aiBadge').className = 'text-xs font-bold px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-600 border-emerald-100';
   }
-
-  // Tingkat aktivitas + progress bar
   $('aiActivityLevel').textContent = level.name;
   $('aiStepsLabel').textContent = `${d.steps.toLocaleString('id-ID')} / 12.500`;
   $('aiActivityBar').style.width = `${(progress * 100).toFixed(1)}%`;
   $('aiActivityBar').className = `bar-fill h-full ${level.barColor} rounded-full`;
-
-  // Status fisik
   if (fatigueRisk) {
     $('aiFatigue').textContent = 'Risiko Lelah';
     $('aiFatigue').className = 'text-base font-semibold text-red-600';
@@ -835,15 +809,9 @@ function updateAI(d) {
   $('aiFatigueDetail').textContent = parts.length
     ? `${parts.join(' | ')} · Ambang HR ≥ ${Math.round(CFG.AI.HR_FATIGUE)} bpm, SpO₂ < ${CFG.AI.SPO2_LOW}%`
     : `Ambang HR ≥ ${Math.round(CFG.AI.HR_FATIGUE)} bpm atau SpO₂ < ${CFG.AI.SPO2_LOW}%`;
-
-  // Saran
   $('aiAdvice').textContent = aiAdvice(level, fatigueRisk, d);
 }
-// =====================================================================
 
-// =====================================================================
-//  KONEKSI + RECONNECT
-// =====================================================================
 let transport = null, userStop = false, retry = 0, retryTimer = null, attempting = false;
 const step = s => sm.go(s.toUpperCase());
 
@@ -852,7 +820,6 @@ function wire(t) {
   t.onDisconnect = handleDisconnect;
   t.onRssi = setRssi;
 }
-
 async function startConnect(kind) {
   if (sm.state !== 'IDLE') return;
   const t = kind === 'demo' ? new MockTransport() : new WebBleTransport();
@@ -864,7 +831,6 @@ async function startConnect(kind) {
   try { await t.connect(step); attempting = false; await onLinked(true); }
   catch (e) { attempting = false; log(`Gagal connect: ${e.message}`, 'err'); haptic('error'); finish(); }
 }
-
 async function onLinked(first) {
   retry = 0; parser.reset();
   if (first || !session) await beginSession();
@@ -872,14 +838,12 @@ async function onLinked(first) {
   haptic('success');
   log('Terhubung. Menunggu data dari ESP32...', 'ok');
 }
-
 function handleDisconnect() {
   if (userStop) { finish(); return; }
   if (sm.state === 'IDLE' || retryTimer || attempting) return;
   log('Perangkat terputus', 'err'); haptic('warning');
   scheduleReconnect();
 }
-
 function scheduleReconnect() {
   if (retry >= CFG.RECONNECT_MAX) { log('Reconnect gagal, berhenti mencoba', 'err'); haptic('error'); finish(); return; }
   retry++;
@@ -892,7 +856,6 @@ function scheduleReconnect() {
     catch (e) { attempting = false; log(`Reconnect gagal: ${e.message}`, 'err'); if (!userStop && sm.state !== 'IDLE') scheduleReconnect(); }
   }, delay);
 }
-
 function stopUser() {
   if (sm.state === 'IDLE') return;
   userStop = true; clearTimeout(retryTimer); retryTimer = null;
@@ -900,15 +863,12 @@ function stopUser() {
   if (transport) transport.disconnect();
   if (!linked) finish();
 }
-
 function finish() {
   clearTimeout(retryTimer); retryTimer = null; attempting = false;
   endSession();
   if (sm.state !== 'IDLE') { sm.go('IDLE'); log('Terputus'); }
   transport = null; sos.since = null; parser.reset(); setRssi(null); renderState('IDLE');
 }
-
-// RSSI
 function setRssi(dbm) {
   const bars = $('rssiBars').children;
   const lvl = dbm === null ? 0 : dbm > -60 ? 4 : dbm > -70 ? 3 : dbm > -80 ? 2 : 1;
@@ -916,9 +876,6 @@ function setRssi(dbm) {
   $('rssiText').textContent = dbm === null ? 'N/A (batasan Web Bluetooth saat terhubung)' : `${dbm} dBm`;
 }
 
-// =====================================================================
-//  KONVERSI & UI
-// =====================================================================
 function batteryPercent(v) { return v ? Math.max(0, Math.min(100, (v - CFG.BAT_MIN_V) / (CFG.BAT_MAX_V - CFG.BAT_MIN_V) * 100)) : 0; }
 function setRing(id, dash, p) { $(id).setAttribute('stroke-dashoffset', (dash * (1 - Math.max(0, Math.min(1, p)))).toFixed(2)); }
 function getStatusClass(s) {
@@ -929,6 +886,7 @@ function getStatusClass(s) {
   return 'bg-blue-50 text-blue-600 border border-blue-100' + base;
 }
 
+// ⬅ CHANGED: render V / I / P
 function updateUI(d) {
   lastDataTime = d.ts;
   $('overviewHr').textContent = d.hr > 0 ? d.hr : '--';
@@ -950,8 +908,12 @@ function updateUI(d) {
   else if (d.spo2 > 0) { txt = 'Rendah!'; cls = 'text-red-500 font-semibold'; }
   h.textContent = txt; h.className = `text-right cap mb-1 ${cls}`;
 
-  $('valBat').textContent = d.bat ? d.bat.toFixed(2) : '--';
-  const pct = batteryPercent(d.bat);
+  // ⬅ CHANGED: INA219 V/I/P
+  const volt = (d.volt != null ? d.volt : d.bat) || 0;
+  $('valBat').textContent = volt ? volt.toFixed(2) : '--';
+  $('valCurrent').textContent = d.current != null ? d.current.toFixed(1) : '--';
+  $('valPower').textContent   = d.power   != null ? d.power.toFixed(1)   : '--';
+  const pct = batteryPercent(volt);
   $('batBar').style.width = `${pct}%`;
   $('batPct').textContent = `${Math.round(pct)}%`;
   $('batBar').className = `bar-fill h-full rounded-full ${pct > 60 ? 'bg-emerald-400' : pct < 20 ? 'bg-red-500' : 'bg-amber-400'}`;
@@ -968,31 +930,35 @@ function updateLastActive() {
 }
 setInterval(() => { updateLastActive(); renderSession(); renderSos(); }, 1000);
 
-// =====================================================================
-//  TABEL RIWAYAT (DOM, tanpa innerHTML)
-// =====================================================================
+// ⬅ CHANGED: history table columns V & I
 function td(text, cls) { const c = document.createElement('td'); c.className = cls; c.textContent = text; return c; }
 function renderHistory() {
   const tb = $('historyBody'); tb.replaceChildren();
   const recent = history.slice(-10).reverse();
   if (!recent.length) {
     const tr = document.createElement('tr');
-    const c = td('No data available. Connect device to start.', 'text-center py-6 text-gray-400 italic'); c.colSpan = 6;
+    const c = td('No data available. Connect device to start.', 'text-center py-6 text-gray-400 italic');
+    c.colSpan = 7;  // ⬅ CHANGED (6 -> 7)
     tr.append(c); tb.append(tr); return;
   }
   recent.forEach(d => {
     const tr = document.createElement('tr'); tr.className = 'hover:bg-gray-50/50';
     const last = td('', 'py-3.5 pl-2 text-right'); const badge = document.createElement('span');
     badge.className = getStatusClass(d.status); badge.textContent = d.status; last.append(badge);
-    tr.append(td(fmtTime(d.ts), 'py-3.5 pr-3'), td(d.hr, 'py-3.5 px-2 text-center font-bold text-gray-900'), td(`${d.spo2}%`, 'py-3.5 px-2 text-center'),
-      td(d.steps.toLocaleString('id-ID'), 'py-3.5 px-2 text-center'), td(`${d.bat.toFixed(2)}V`, 'py-3.5 px-2 text-right font-mono'), last);
+    const volt = (d.volt != null ? d.volt : d.bat);
+    tr.append(
+      td(fmtTime(d.ts), 'py-3.5 pr-3 whitespace-nowrap'),
+      td(d.hr, 'py-3.5 px-2 text-center font-bold text-gray-900'),
+      td(`${d.spo2}%`, 'py-3.5 px-2 text-center'),
+      td(d.steps.toLocaleString('id-ID'), 'py-3.5 px-2 text-center'),
+      td(volt != null ? `${volt.toFixed(2)}V` : '--', 'py-3.5 px-2 text-center font-mono text-gray-600'),
+      td(d.current != null ? `${d.current.toFixed(0)}mA` : '--', 'py-3.5 px-2 text-center font-mono text-gray-600'),
+      last
+    );
     tb.append(tr);
   });
 }
 
-// =====================================================================
-//  CHART
-// =====================================================================
 function initChart() {
   chart = new Chart($('chart').getContext('2d'), {
     type: 'line',
@@ -1041,9 +1007,6 @@ function rebuildCharts() {
   heartMini.update('none');
 }
 
-// =====================================================================
-//  PENANGANAN DATA
-// =====================================================================
 function handleReading(d) {
   d.sessionId = session && session.id !== undefined ? session.id : null;
   history.push(d);
@@ -1051,59 +1014,54 @@ function handleReading(d) {
   saveReading(d);
   if (session) { session.samples++; if (session.samples % 20 === 0) saveSession(); }
   updateUI(d); updateHeartMini(d); renderHistory(); updateChart(d);
-  updateAI(d);              // <-- BARU: Ringkasan AI
+  updateAI(d);
   evaluateAlerts(d);
   sosFeed(d);
 }
 
-// =====================================================================
-//  EXPORT
-// =====================================================================
 function download(name, text, mime) {
   const url = URL.createObjectURL(new Blob([text], { type: mime }));
   const a = document.createElement('a'); a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+// ⬅ CHANGED: kolom CSV volt / current / power
 async function exportCSV() {
   const rows = await getAll('readings');
   if (!rows.length) { alert('Belum ada data'); return; }
-  
-  const head = 'timestamp,session_id,seq,uptime_s,hr_bpm,spo2_pct,steps,battery_v,status,crc_verified,ai_level,fatigue_risk\n';
-  
+  const head = 'timestamp,session_id,seq,uptime_s,hr_bpm,spo2_pct,steps,volt_v,current_ma,power_mw,status,crc_verified,ai_level,fatigue_risk\n';
   const body = rows.map(d => {
-    // Pindahkan aiClassify(d) ke dalam map agar d (data per baris) terbaca
     const ai = aiClassify(d);
-    
+    const volt = (d.volt != null ? d.volt : d.bat) ?? 0;
     return [
-      new Date(d.ts).toISOString(), 
-      d.sessionId ?? '', 
-      d.seq ?? '', 
-      d.uptime, 
-      d.hr, 
-      d.spo2, 
-      d.steps, 
-      d.bat.toFixed(2), 
-      d.status, 
+      new Date(d.ts).toISOString(),
+      d.sessionId ?? '',
+      d.seq ?? '',
+      d.uptime,
+      d.hr,
+      d.spo2,
+      d.steps,
+      volt.toFixed(2),
+      (d.current ?? 0).toFixed(1),
+      (d.power ?? 0).toFixed(1),
+      d.status,
       d.verified ? 1 : 0,
-      ai.level.name, 
+      ai.level.name,
       ai.fatigueRisk ? 1 : 0
     ].join(',');
   }).join('\n');
-  
   download(`SRHV1.0_${Date.now()}.csv`, head + body, 'text/csv');
-  log(`Export ${rows.length} baris ke CSV dengan ringkasan AI`, 'ok');
+  log(`Export ${rows.length} baris ke CSV (V/I/P)`, 'ok');
 }
 
 async function exportJSON() {
   const [devices, sessions, readings, sosEvents] = await Promise.all([getAll('devices'), getAll('sessions'), getAll('readings'), getAll('sos_events')]);
   if (!readings.length) { alert('Belum ada data'); return; }
-  const out = { schema: 'esp32-monitor/3', exportedAt: new Date().toISOString(), devices, sessions, readings, sosEvents };
+  const out = { schema: 'esp32-monitor/4', exportedAt: new Date().toISOString(), devices, sessions, readings, sosEvents };
   download(`SRHV1.0_${Date.now()}.json`, JSON.stringify(out, null, 2), 'application/json');
-  log(`Export JSON: ${devices.length} perangkat, ${sessions.length} sesi, ${readings.length} bacaan, ${sosEvents.length} kejadian SOS`, 'ok');
+  log(`Export JSON: ${devices.length} perangkat, ${sessions.length} sesi, ${readings.length} bacaan, ${sosEvents.length} SOS`, 'ok');
 }
-// =====================================================================
-//  DRAWER
-// =====================================================================
+
 function openDrawer() {
   drawerOpen = true; haptic('light');
   $('drawer').classList.remove('translate-x-full');
@@ -1115,9 +1073,6 @@ function closeDrawer() {
   $('drawerOverlay').classList.add('opacity-0', 'pointer-events-none');
 }
 
-// =====================================================================
-//  PULL-TO-REFRESH
-// =====================================================================
 function initPullToRefresh() {
   const ptr = $('ptr'), txt = $('ptrText'), MAX = 80, TRIGGER = 56;
   let y0 = null, dist = 0;
@@ -1142,9 +1097,6 @@ function initPullToRefresh() {
   });
 }
 
-// =====================================================================
-//  INIT
-// =====================================================================
 async function init() {
   try { await openDB(); } catch (e) { log(`Database gagal dibuka: ${e.message}`, 'err'); }
   initChart();
@@ -1152,7 +1104,7 @@ async function init() {
   if (history.length) {
     log(`Memuat ${history.length} sampel dari database lokal`, 'ok');
     updateUI(history[history.length - 1]);
-    updateAI(history[history.length - 1]);   // <-- BARU: isi panel AI dari data terakhir
+    updateAI(history[history.length - 1]);
     rebuildCharts();
   } else log('Database kosong. Siap menerima data baru.');
   renderHistory(); renderState('IDLE'); renderSession(); setRssi(null); renderSos();
@@ -1173,7 +1125,7 @@ async function init() {
     await clearDB();
     history = []; rebuildCharts(); renderHistory(); lastDataTime = null;
     $('sampleCount').textContent = '0 samples';
-    updateAI({ hr: 0, spo2: 0, steps: 0 });    // <-- BARU: reset panel AI
+    updateAI({ hr: 0, spo2: 0, steps: 0 });
   });
 
   $('btnSosAnomaly').addEventListener('click', () => {
